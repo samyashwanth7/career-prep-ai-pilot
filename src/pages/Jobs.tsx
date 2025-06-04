@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -63,10 +62,10 @@ const Jobs = () => {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [experienceFilter, setExperienceFilter] = useState('');
-  const [salaryFilter, setSalaryFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [experienceFilter, setExperienceFilter] = useState('all');
+  const [salaryFilter, setSalaryFilter] = useState('all');
   
   // Modal states
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -204,10 +203,10 @@ const Jobs = () => {
                            job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            job.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesLocation = !locationFilter || job.location.includes(locationFilter);
-      const matchesType = !typeFilter || job.type === typeFilter;
-      const matchesExperience = !experienceFilter || job.experience === experienceFilter;
-      const matchesSalary = !salaryFilter || checkSalaryRange(job.salary, salaryFilter);
+      const matchesLocation = !locationFilter || locationFilter === 'all' || job.location.includes(locationFilter);
+      const matchesType = !typeFilter || typeFilter === 'all' || job.type === typeFilter;
+      const matchesExperience = !experienceFilter || experienceFilter === 'all' || job.experience === experienceFilter;
+      const matchesSalary = !salaryFilter || salaryFilter === 'all' || checkSalaryRange(job.salary, salaryFilter);
 
       return matchesSearch && matchesLocation && matchesType && matchesExperience && matchesSalary;
     });
@@ -365,10 +364,10 @@ const Jobs = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setLocationFilter('');
-    setTypeFilter('');
-    setExperienceFilter('');
-    setSalaryFilter('');
+    setLocationFilter('all');
+    setTypeFilter('all');
+    setExperienceFilter('all');
+    setSalaryFilter('all');
   };
 
   if (!currentUser) {
@@ -439,7 +438,7 @@ const Jobs = () => {
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value="all">All Locations</SelectItem>
                 <SelectItem value="CA">California</SelectItem>
                 <SelectItem value="WA">Washington</SelectItem>
                 <SelectItem value="NY">New York</SelectItem>
@@ -452,7 +451,7 @@ const Jobs = () => {
                 <SelectValue placeholder="Job Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Full-time">Full-time</SelectItem>
                 <SelectItem value="Part-time">Part-time</SelectItem>
                 <SelectItem value="Contract">Contract</SelectItem>
@@ -465,7 +464,7 @@ const Jobs = () => {
                 <SelectValue placeholder="Experience" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Levels</SelectItem>
+                <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value="Entry">Entry Level</SelectItem>
                 <SelectItem value="Mid">Mid Level</SelectItem>
                 <SelectItem value="Senior">Senior Level</SelectItem>
@@ -478,7 +477,7 @@ const Jobs = () => {
                 <SelectValue placeholder="Salary" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Salaries</SelectItem>
+                <SelectItem value="all">All Salaries</SelectItem>
                 <SelectItem value="under-100k">Under $100k</SelectItem>
                 <SelectItem value="100k-150k">$100k - $150k</SelectItem>
                 <SelectItem value="over-150k">Over $150k</SelectItem>
@@ -488,7 +487,7 @@ const Jobs = () => {
           
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              {(searchTerm || locationFilter || typeFilter || experienceFilter || salaryFilter) && (
+              {(searchTerm || (locationFilter && locationFilter !== 'all') || (typeFilter && typeFilter !== 'all') || (experienceFilter && experienceFilter !== 'all') || (salaryFilter && salaryFilter !== 'all')) && (
                 <Button
                   variant="outline"
                   size="sm"
