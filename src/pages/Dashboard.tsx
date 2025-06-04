@@ -93,7 +93,7 @@ const Dashboard = () => {
       icon: Users,
       title: "Company Practice",
       description: "FAANG-specific interview preparation",
-      path: "/companies",
+      path: "/interview",
       color: "from-green-500 to-emerald-500",
       count: "15 companies"
     },
