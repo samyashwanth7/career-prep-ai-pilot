@@ -60,7 +60,7 @@ const Jobs = () => {
   const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<any>(null);
   
-  // Filters
+  // Filters - ensure they never have empty strings
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -203,10 +203,10 @@ const Jobs = () => {
                            job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            job.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesLocation = !locationFilter || locationFilter === 'all' || job.location.includes(locationFilter);
-      const matchesType = !typeFilter || typeFilter === 'all' || job.type === typeFilter;
-      const matchesExperience = !experienceFilter || experienceFilter === 'all' || job.experience === experienceFilter;
-      const matchesSalary = !salaryFilter || salaryFilter === 'all' || checkSalaryRange(job.salary, salaryFilter);
+      const matchesLocation = locationFilter === 'all' || job.location.includes(locationFilter);
+      const matchesType = typeFilter === 'all' || job.type === typeFilter;
+      const matchesExperience = experienceFilter === 'all' || job.experience === experienceFilter;
+      const matchesSalary = salaryFilter === 'all' || checkSalaryRange(job.salary, salaryFilter);
 
       return matchesSearch && matchesLocation && matchesType && matchesExperience && matchesSalary;
     });
@@ -437,7 +437,7 @@ const Jobs = () => {
               <SelectTrigger className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="all">All Locations</SelectItem>
                 <SelectItem value="CA">California</SelectItem>
                 <SelectItem value="WA">Washington</SelectItem>
@@ -450,7 +450,7 @@ const Jobs = () => {
               <SelectTrigger className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Job Type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Full-time">Full-time</SelectItem>
                 <SelectItem value="Part-time">Part-time</SelectItem>
@@ -463,7 +463,7 @@ const Jobs = () => {
               <SelectTrigger className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Experience" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="all">All Levels</SelectItem>
                 <SelectItem value="Entry">Entry Level</SelectItem>
                 <SelectItem value="Mid">Mid Level</SelectItem>
@@ -476,7 +476,7 @@ const Jobs = () => {
               <SelectTrigger className="bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Salary" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="all">All Salaries</SelectItem>
                 <SelectItem value="under-100k">Under $100k</SelectItem>
                 <SelectItem value="100k-150k">$100k - $150k</SelectItem>
