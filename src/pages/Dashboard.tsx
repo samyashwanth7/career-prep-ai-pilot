@@ -19,7 +19,8 @@ import {
   MapPin,
   Zap,
   Clock,
-  Star
+  Star,
+  Building2
 } from 'lucide-react';
 import Gamification from '@/components/Gamification';
 
@@ -77,7 +78,7 @@ const Dashboard = () => {
     {
       title: "Company Practice",
       description: "Company-specific simulations",
-      icon: <Building className="w-6 h-6" />,
+      icon: <Building2 className="w-6 h-6" />,
       color: "from-blue-500 to-cyan-500",
       onClick: () => navigate('/company-practice')
     },
@@ -281,7 +282,7 @@ const Dashboard = () => {
               <div className="space-y-2">
                 {[
                   { name: 'Interview Practice', path: '/interview', icon: <Mic className="w-4 h-4" /> },
-                  { name: 'Company Practice', path: '/company-practice', icon: <Building className="w-4 h-4" /> },
+                  { name: 'Company Practice', path: '/company-practice', icon: <Building2 className="w-4 h-4" /> },
                   { name: 'Career Roadmap', path: '/career-roadmap', icon: <MapPin className="w-4 h-4" /> },
                   { name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileText className="w-4 h-4" /> },
                   { name: 'Bulk Applications', path: '/bulk-applications', icon: <Zap className="w-4 h-4" /> },
