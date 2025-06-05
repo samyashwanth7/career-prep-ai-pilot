@@ -14,6 +14,8 @@ import Interview from "./pages/Interview";
 import Analytics from "./pages/Analytics";
 import CareerRoadmap from "./pages/CareerRoadmap";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
+import CompanyPractice from "./pages/CompanyPractice";
+import BulkApplications from "./pages/BulkApplications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/career-roadmap" element={<CareerRoadmap />} />
           <Route path="/resume-analyzer" element={<ResumeAnalyzer />} />
+          <Route path="/company-practice" element={<CompanyPractice />} />
+          <Route path="/bulk-applications" element={<BulkApplications />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

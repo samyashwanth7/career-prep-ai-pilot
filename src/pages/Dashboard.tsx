@@ -68,11 +68,18 @@ const Dashboard = () => {
 
   const quickActions = [
     {
-      title: "Start Interview Practice",
-      description: "Practice with AI interviewer",
+      title: "AI Interview Practice",
+      description: "General interview practice",
       icon: <Mic className="w-6 h-6" />,
       color: "from-purple-500 to-blue-500",
       onClick: () => navigate('/interview')
+    },
+    {
+      title: "Company Practice",
+      description: "Company-specific simulations",
+      icon: <Building className="w-6 h-6" />,
+      color: "from-blue-500 to-cyan-500",
+      onClick: () => navigate('/company-practice')
     },
     {
       title: "Career Roadmap",
@@ -89,7 +96,14 @@ const Dashboard = () => {
       onClick: () => navigate('/resume-analyzer')
     },
     {
-      title: "Job Applications",
+      title: "Bulk Applications",
+      description: "Apply to multiple jobs",
+      icon: <Zap className="w-6 h-6" />,
+      color: "from-pink-500 to-purple-500",
+      onClick: () => navigate('/bulk-applications')
+    },
+    {
+      title: "Job Search",
       description: "Find and apply to jobs",
       icon: <Briefcase className="w-6 h-6" />,
       color: "from-cyan-500 to-blue-500",
@@ -185,18 +199,18 @@ const Dashboard = () => {
             {/* Quick Actions */}
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
               <h2 className="text-xl font-semibold text-white mb-6">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {quickActions.map((action, index) => (
                   <button
                     key={index}
                     onClick={action.onClick}
-                    className={`p-6 rounded-lg bg-gradient-to-r ${action.color} hover:scale-105 transition-transform text-left`}
+                    className={`p-4 rounded-lg bg-gradient-to-r ${action.color} hover:scale-105 transition-transform text-left`}
                   >
-                    <div className="flex items-center mb-3">
+                    <div className="flex items-center mb-2">
                       <div className="text-white">{action.icon}</div>
-                      <h3 className="text-white font-semibold ml-3">{action.title}</h3>
+                      <h3 className="text-white font-semibold ml-2 text-sm">{action.title}</h3>
                     </div>
-                    <p className="text-white/80 text-sm">{action.description}</p>
+                    <p className="text-white/80 text-xs">{action.description}</p>
                   </button>
                 ))}
               </div>
@@ -267,9 +281,11 @@ const Dashboard = () => {
               <div className="space-y-2">
                 {[
                   { name: 'Interview Practice', path: '/interview', icon: <Mic className="w-4 h-4" /> },
+                  { name: 'Company Practice', path: '/company-practice', icon: <Building className="w-4 h-4" /> },
                   { name: 'Career Roadmap', path: '/career-roadmap', icon: <MapPin className="w-4 h-4" /> },
                   { name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileText className="w-4 h-4" /> },
-                  { name: 'Job Applications', path: '/jobs', icon: <Briefcase className="w-4 h-4" /> },
+                  { name: 'Bulk Applications', path: '/bulk-applications', icon: <Zap className="w-4 h-4" /> },
+                  { name: 'Job Search', path: '/jobs', icon: <Briefcase className="w-4 h-4" /> },
                   { name: 'Analytics', path: '/analytics', icon: <BarChart3 className="w-4 h-4" /> }
                 ].map((item) => (
                   <button

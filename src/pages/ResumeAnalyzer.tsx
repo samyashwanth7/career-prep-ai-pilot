@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -17,9 +16,12 @@ import {
   Zap,
   ArrowLeft,
   Download,
-  RefreshCw
+  RefreshCw,
+  FileImage,
+  Loader
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createWorker } from 'tesseract.js';
 
 interface AnalysisResult {
   atsScore: number;
@@ -41,6 +43,8 @@ const ResumeAnalyzer = () => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
 
   const roleKeywords = {
     'software-engineer': [
@@ -93,30 +97,105 @@ const ResumeAnalyzer = () => {
     }
   }, [navigate]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'text/plain' && !file.name.endsWith('.txt')) {
-      toast({
-        title: "File Type Error",
-        description: "Please upload a .txt file. Convert your PDF/DOC to text first.",
-        variant: "destructive"
-      });
-      return;
-    }
+    const fileType = file.type;
+    const fileName = file.name.toLowerCase();
 
     setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setResumeText(text);
+
+    if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+      // Handle text files directly
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setResumeText(text);
+        toast({
+          title: "File Uploaded",
+          description: "Resume content loaded successfully!"
+        });
+      };
+      reader.readAsText(file);
+    } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      // Handle PDF files with OCR
+      setIsProcessingFile(true);
+      setOcrProgress(0);
+      
+      try {
+        const worker = await createWorker();
+        
+        // Set up progress tracking
+        worker.setParameters({
+          logger: (m: any) => {
+            if (m.status === 'recognizing text') {
+              setOcrProgress(Math.round(m.progress * 100));
+            }
+          }
+        });
+
+        const { data: { text } } = await worker.recognize(file);
+        await worker.terminate();
+
+        setResumeText(text);
+        setIsProcessingFile(false);
+        
+        toast({
+          title: "PDF Processed",
+          description: "Resume text extracted successfully from PDF!"
+        });
+      } catch (error) {
+        console.error('OCR Error:', error);
+        setIsProcessingFile(false);
+        toast({
+          title: "PDF Processing Error",
+          description: "Failed to extract text from PDF. Please try uploading a text file instead.",
+          variant: "destructive"
+        });
+      }
+    } else if (fileType.startsWith('image/') || fileName.match(/\.(jpg|jpeg|png|gif|bmp)$/)) {
+      // Handle image files with OCR
+      setIsProcessingFile(true);
+      setOcrProgress(0);
+      
+      try {
+        const worker = await createWorker();
+        
+        worker.setParameters({
+          logger: (m: any) => {
+            if (m.status === 'recognizing text') {
+              setOcrProgress(Math.round(m.progress * 100));
+            }
+          }
+        });
+
+        const { data: { text } } = await worker.recognize(file);
+        await worker.terminate();
+
+        setResumeText(text);
+        setIsProcessingFile(false);
+        
+        toast({
+          title: "Image Processed",
+          description: "Resume text extracted successfully from image!"
+        });
+      } catch (error) {
+        console.error('OCR Error:', error);
+        setIsProcessingFile(false);
+        toast({
+          title: "Image Processing Error",
+          description: "Failed to extract text from image. Please try a clearer image or text file.",
+          variant: "destructive"
+        });
+      }
+    } else {
       toast({
-        title: "File Uploaded",
-        description: "Resume content loaded successfully!"
+        title: "File Type Error",
+        description: "Please upload a PDF, image, or text file.",
+        variant: "destructive"
       });
-    };
-    reader.readAsText(file);
+    }
   };
 
   const analyzeKeywords = (text: string, role: string) => {
@@ -388,26 +467,51 @@ const ResumeAnalyzer = () => {
               
               {/* File Upload */}
               <div className="mb-6">
-                <label className="block text-white font-medium mb-2">Upload Resume (TXT format)</label>
+                <label className="block text-white font-medium mb-2">Upload Resume (PDF, Image, or TXT)</label>
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center">
                   <input
                     type="file"
-                    accept=".txt"
+                    accept=".txt,.pdf,.jpg,.jpeg,.png,.gif,.bmp"
                     onChange={handleFileUpload}
                     className="hidden"
                     id="resume-upload"
+                    disabled={isProcessingFile}
                   />
                   <label
                     htmlFor="resume-upload"
-                    className="cursor-pointer flex flex-col items-center space-y-2"
+                    className={`cursor-pointer flex flex-col items-center space-y-2 ${isProcessingFile ? 'opacity-50' : ''}`}
                   >
-                    <Upload className="w-8 h-8 text-gray-400" />
-                    <span className="text-gray-300">
-                      {uploadedFile ? uploadedFile.name : 'Click to upload resume (.txt file)'}
-                    </span>
-                    <span className="text-gray-500 text-sm">
-                      Convert your PDF/DOC to text format first
-                    </span>
+                    {isProcessingFile ? (
+                      <>
+                        <Loader className="w-8 h-8 text-purple-400 animate-spin" />
+                        <span className="text-purple-400">Processing file... {ocrProgress}%</span>
+                        <Progress value={ocrProgress} className="w-full max-w-xs" />
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-gray-400" />
+                        <span className="text-gray-300">
+                          {uploadedFile ? uploadedFile.name : 'Click to upload resume'}
+                        </span>
+                        <span className="text-gray-500 text-sm">
+                          Supports PDF, images (JPG, PNG), and text files
+                        </span>
+                        <div className="flex items-center space-x-4 text-xs text-gray-400 mt-2">
+                          <div className="flex items-center">
+                            <FileText className="w-4 h-4 mr-1" />
+                            PDF
+                          </div>
+                          <div className="flex items-center">
+                            <FileImage className="w-4 h-4 mr-1" />
+                            Images
+                          </div>
+                          <div className="flex items-center">
+                            <FileText className="w-4 h-4 mr-1" />
+                            Text
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </label>
                 </div>
               </div>
@@ -420,6 +524,7 @@ const ResumeAnalyzer = () => {
                   onChange={(e) => setResumeText(e.target.value)}
                   placeholder="Paste your resume content here..."
                   className="w-full h-48 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  disabled={isProcessingFile}
                 />
                 <div className="text-right text-gray-400 text-sm mt-1">
                   {resumeText.length} characters
@@ -434,11 +539,12 @@ const ResumeAnalyzer = () => {
                     <button
                       key={role.id}
                       onClick={() => setSelectedRole(role.id)}
+                      disabled={isProcessingFile}
                       className={`p-3 rounded-lg border text-left transition-all ${
                         selectedRole === role.id
                           ? 'border-purple-500 bg-purple-500/20 text-white'
                           : 'border-white/20 text-gray-300 hover:border-white/40'
-                      }`}
+                      } ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {role.name}
                     </button>
@@ -448,7 +554,7 @@ const ResumeAnalyzer = () => {
 
               <Button
                 onClick={analyzeResume}
-                disabled={isAnalyzing || !resumeText.trim() || !selectedRole}
+                disabled={isAnalyzing || !resumeText.trim() || !selectedRole || isProcessingFile}
                 className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
               >
                 {isAnalyzing ? (
@@ -500,6 +606,16 @@ const ResumeAnalyzer = () => {
                     <h3 className="text-white font-medium">Improvement Suggestions</h3>
                     <p className="text-gray-400 text-sm">Actionable recommendations with impact</p>
                   </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-lg">
+                <h3 className="text-white font-medium mb-2">✨ New: AI-Powered File Processing</h3>
+                <div className="text-gray-300 text-sm space-y-1">
+                  <div>• Extract text from PDF files automatically</div>
+                  <div>• Process resume images with OCR technology</div>
+                  <div>• Support for multiple file formats</div>
+                  <div>• Smart text cleanup and formatting</div>
                 </div>
               </div>
 
