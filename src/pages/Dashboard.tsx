@@ -1,31 +1,40 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { 
   Mic, 
-  Briefcase, 
   BarChart3, 
-  Users, 
-  Sparkles, 
-  TrendingUp, 
-  Target, 
-  Clock,
+  Briefcase, 
+  User, 
+  Play,
+  TrendingUp,
+  Calendar,
   Trophy,
-  Flame,
-  PlayCircle,
-  Settings,
-  LogOut,
-  User
+  Target,
+  FileText,
+  MapPin,
+  Zap,
+  Clock,
+  Star
 } from 'lucide-react';
+import Gamification from '@/components/Gamification';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [stats, setStats] = useState({
+    totalInterviews: 0,
+    avgScore: 0,
+    totalApplications: 0,
+    responseRate: 0,
+    currentStreak: 0,
+    totalXP: 0,
+    level: 1
+  });
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -35,307 +44,251 @@ const Dashboard = () => {
     }
     setCurrentUser(JSON.parse(user));
 
-    // Initialize demo data if it doesn't exist
-    initializeDemoData();
+    // Load user stats
+    const sessions = JSON.parse(localStorage.getItem('interviewSessions') || '[]');
+    const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+    const userXP = JSON.parse(localStorage.getItem('userXP') || '{"totalXP": 0, "level": 1}');
+    const parsedUser = JSON.parse(user);
+
+    const userSessions = sessions.filter((s: any) => s.userId === parsedUser.id);
+    const userApplications = applications.filter((a: any) => a.userId === parsedUser.id);
+
+    setStats({
+      totalInterviews: userSessions.length,
+      avgScore: userSessions.length > 0 
+        ? Math.round(userSessions.reduce((sum: number, s: any) => sum + s.overallScore, 0) / userSessions.length)
+        : 0,
+      totalApplications: userApplications.length,
+      responseRate: Math.round(Math.random() * 15 + 5), // Simulated
+      currentStreak: Math.floor(Math.random() * 7) + 1, // Simulated
+      totalXP: userXP.totalXP,
+      level: userXP.level
+    });
   }, [navigate]);
 
-  const initializeDemoData = () => {
-    if (!localStorage.getItem('userStats')) {
-      const demoStats = {
-        totalInterviews: 12,
-        successRate: 78,
-        averageScore: 82,
-        streak: 5,
-        level: 'Intermediate',
-        xp: 2340,
-        nextLevelXP: 3000
-      };
-      localStorage.setItem('userStats', JSON.stringify(demoStats));
-    }
-
-    if (!localStorage.getItem('recentActivity')) {
-      const recentActivity = [
-        { type: 'interview', company: 'Google', score: 85, date: '2024-01-15' },
-        { type: 'interview', company: 'Meta', score: 78, date: '2024-01-14' },
-        { type: 'application', company: 'Amazon', status: 'applied', date: '2024-01-13' },
-        { type: 'interview', company: 'Apple', score: 91, date: '2024-01-12' }
-      ];
-      localStorage.setItem('recentActivity', JSON.stringify(recentActivity));
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    navigate('/');
-  };
-
-  const stats = JSON.parse(localStorage.getItem('userStats') || '{}');
-  const recentActivity = JSON.parse(localStorage.getItem('recentActivity') || '[]');
-
-  const features = [
+  const quickActions = [
     {
-      icon: Briefcase,
-      title: "Job Applications",
-      description: "Smart job search and bulk applications",
-      path: "/jobs",
-      color: "from-blue-500 to-cyan-500",
-      count: "23 active"
+      title: "Start Interview Practice",
+      description: "Practice with AI interviewer",
+      icon: <Mic className="w-6 h-6" />,
+      color: "from-purple-500 to-blue-500",
+      onClick: () => navigate('/interview')
     },
     {
-      icon: Mic,
-      title: "AI Interview",
-      description: "Practice with voice recording and real-time feedback",
-      path: "/interview",
-      color: "from-purple-500 to-pink-500",
-      count: "Start now"
+      title: "Career Roadmap",
+      description: "Personalized learning path",
+      icon: <MapPin className="w-6 h-6" />,
+      color: "from-green-500 to-teal-500",
+      onClick: () => navigate('/career-roadmap')
     },
     {
-      icon: Users,
-      title: "Company Practice",
-      description: "FAANG-specific interview preparation",
-      path: "/interview",
-      color: "from-green-500 to-emerald-500",
-      count: "15 companies"
-    },
-    {
-      icon: BarChart3,
-      title: "Analytics",
-      description: "Track your progress and performance",
-      path: "/analytics",
+      title: "Resume Analyzer",
+      description: "AI-powered optimization",
+      icon: <FileText className="w-6 h-6" />,
       color: "from-orange-500 to-red-500",
-      count: "View insights"
+      onClick: () => navigate('/resume-analyzer')
+    },
+    {
+      title: "Job Applications",
+      description: "Find and apply to jobs",
+      icon: <Briefcase className="w-6 h-6" />,
+      color: "from-cyan-500 to-blue-500",
+      onClick: () => navigate('/jobs')
     }
   ];
 
+  const recentActivity = [
+    { type: 'interview', message: 'Completed Google technical interview', time: '2 hours ago', score: 85 },
+    { type: 'application', message: 'Applied to 5 new positions', time: '1 day ago' },
+    { type: 'achievement', message: 'Earned "Week Warrior" badge', time: '2 days ago' },
+    { type: 'roadmap', message: 'Completed React fundamentals phase', time: '3 days ago' }
+  ];
+
   if (!currentUser) {
-    return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
-    </div>;
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">AI Interviewer</h1>
-              <p className="text-sm text-gray-400">Dashboard</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="text-2xl">{currentUser.avatar || '👤'}</div>
-              <div>
-                <p className="text-white font-medium">{currentUser.name}</p>
-                <p className="text-xs text-gray-400">{stats.level || 'Beginner'}</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-white"
-              onClick={() => navigate('/profile')}
-            >
-              <User className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-white"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="p-6 max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {currentUser.name}! 👋
-          </h2>
-          <p className="text-gray-400">Ready to ace your next interview? Let's continue your preparation journey.</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              <Badge variant="secondary" className="bg-yellow-400/20 text-yellow-400">
-                Level {stats.level}
-              </Badge>
-            </div>
-            <div className="text-2xl font-bold text-white mb-1">{stats.xp || 0}</div>
-            <div className="text-sm text-gray-400">Experience Points</div>
-            <Progress value={(stats.xp / stats.nextLevelXP) * 100} className="mt-2 h-2" />
-          </Card>
-
-          <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <TrendingUp className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 text-sm">+5%</span>
-            </div>
-            <div className="text-2xl font-bold text-white mb-1">{stats.successRate || 0}%</div>
-            <div className="text-sm text-gray-400">Success Rate</div>
-          </Card>
-
-          <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <Target className="w-5 h-5 text-blue-400" />
-              <span className="text-blue-400 text-sm">↗ 12</span>
-            </div>
-            <div className="text-2xl font-bold text-white mb-1">{stats.totalInterviews || 0}</div>
-            <div className="text-sm text-gray-400">Interviews Completed</div>
-          </Card>
-
-          <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <Flame className="w-5 h-5 text-orange-400" />
-              <span className="text-orange-400 text-sm">🔥</span>
-            </div>
-            <div className="text-2xl font-bold text-white mb-1">{stats.streak || 0}</div>
-            <div className="text-sm text-gray-400">Day Streak</div>
-          </Card>
-        </div>
-
-        {/* Main Features */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Feature Cards */}
-          <div className="lg:col-span-2">
-            <h3 className="text-xl font-semibold text-white mb-6">Quick Actions</h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              {features.map((feature, index) => (
-                <Card key={index} className="bg-white/5 backdrop-blur-lg border-white/10 p-6 hover:bg-white/10 transition-all duration-300 group cursor-pointer">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${feature.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <feature.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <Button
-                      size="sm"
-                      className="bg-white/10 hover:bg-white/20 text-white"
-                      onClick={() => navigate(feature.path)}
-                    >
-                      <PlayCircle className="w-4 h-4 mr-1" />
-                      Start
-                    </Button>
-                  </div>
-                  <h4 className="text-lg font-semibold text-white mb-2">{feature.title}</h4>
-                  <p className="text-gray-400 text-sm mb-3">{feature.description}</p>
-                  <Badge variant="outline" className="border-white/20 text-gray-300">
-                    {feature.count}
-                  </Badge>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activity */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-6">Recent Activity</h3>
-            <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6">
+            <h1 className="text-3xl font-bold text-white">
+              Welcome back, {currentUser.name}! 👋
+            </h1>
+            <p className="text-gray-300 mt-2">Ready to advance your career today?</p>
+          </div>
+          <Button
+            onClick={() => {
+              localStorage.removeItem('currentUser');
+              navigate('/');
+            }}
+            variant="outline"
+            className="border-white/20 text-white hover:bg-white/10"
+          >
+            <User className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <div className="flex items-center">
+                  <Mic className="w-8 h-8 text-purple-400 mr-3" />
+                  <div>
+                    <div className="text-white font-semibold">Interviews</div>
+                    <div className="text-2xl font-bold text-purple-400">{stats.totalInterviews}</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <div className="flex items-center">
+                  <TrendingUp className="w-8 h-8 text-green-400 mr-3" />
+                  <div>
+                    <div className="text-white font-semibold">Avg Score</div>
+                    <div className="text-2xl font-bold text-green-400">{stats.avgScore}%</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <div className="flex items-center">
+                  <Briefcase className="w-8 h-8 text-cyan-400 mr-3" />
+                  <div>
+                    <div className="text-white font-semibold">Applications</div>
+                    <div className="text-2xl font-bold text-cyan-400">{stats.totalApplications}</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <div className="flex items-center">
+                  <Trophy className="w-8 h-8 text-yellow-400 mr-3" />
+                  <div>
+                    <div className="text-white font-semibold">Level</div>
+                    <div className="text-2xl font-bold text-yellow-400">{stats.level}</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+              <h2 className="text-xl font-semibold text-white mb-6">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={action.onClick}
+                    className={`p-6 rounded-lg bg-gradient-to-r ${action.color} hover:scale-105 transition-transform text-left`}
+                  >
+                    <div className="flex items-center mb-3">
+                      <div className="text-white">{action.icon}</div>
+                      <h3 className="text-white font-semibold ml-3">{action.title}</h3>
+                    </div>
+                    <p className="text-white/80 text-sm">{action.description}</p>
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            {/* Recent Activity */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+              <h2 className="text-xl font-semibold text-white mb-6">Recent Activity</h2>
               <div className="space-y-4">
-                {recentActivity.slice(0, 5).map((activity: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-lg ${
-                        activity.type === 'interview' 
-                          ? 'bg-purple-500/20 text-purple-400' 
-                          : 'bg-blue-500/20 text-blue-400'
-                      } flex items-center justify-center`}>
-                        {activity.type === 'interview' ? (
-                          <Mic className="w-4 h-4" />
-                        ) : (
-                          <Briefcase className="w-4 h-4" />
-                        )}
-                      </div>
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full mr-3 ${
+                        activity.type === 'interview' ? 'bg-purple-400' :
+                        activity.type === 'application' ? 'bg-cyan-400' :
+                        activity.type === 'achievement' ? 'bg-yellow-400' :
+                        'bg-green-400'
+                      }`}></div>
                       <div>
-                        <p className="text-white text-sm font-medium">
-                          {activity.type === 'interview' 
-                            ? `Interview with ${activity.company}` 
-                            : `Applied to ${activity.company}`
-                          }
-                        </p>
-                        <p className="text-gray-400 text-xs">{activity.date}</p>
+                        <div className="text-white text-sm">{activity.message}</div>
+                        <div className="text-gray-400 text-xs">{activity.time}</div>
                       </div>
                     </div>
                     {activity.score && (
-                      <Badge variant="outline" className="border-green-400/20 text-green-400">
+                      <Badge className="bg-purple-500/20 text-purple-400">
                         {activity.score}%
                       </Badge>
                     )}
                   </div>
                 ))}
-                <Button 
-                  variant="outline" 
-                  className="w-full border-white/20 text-white hover:bg-white/10"
-                  onClick={() => navigate('/history')}
-                >
-                  View All Activity
-                </Button>
               </div>
             </Card>
 
-            {/* Quick Stats */}
-            <Card className="bg-white/5 backdrop-blur-lg border-white/10 p-6 mt-6">
-              <h4 className="text-lg font-semibold text-white mb-4">This Week</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Interviews</span>
-                  <span className="text-white font-medium">3</span>
+            {/* Weekly Goals */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+              <h2 className="text-xl font-semibold text-white mb-6">Weekly Goals</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white">Complete 5 interviews</span>
+                    <span className="text-gray-400">{Math.min(stats.totalInterviews, 5)}/5</span>
+                  </div>
+                  <Progress value={(Math.min(stats.totalInterviews, 5) / 5) * 100} />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Applications</span>
-                  <span className="text-white font-medium">7</span>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white">Apply to 10 jobs</span>
+                    <span className="text-gray-400">{Math.min(stats.totalApplications, 10)}/10</span>
+                  </div>
+                  <Progress value={(Math.min(stats.totalApplications, 10) / 10) * 100} />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Average Score</span>
-                  <span className="text-white font-medium">84%</span>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white">7-day practice streak</span>
+                    <span className="text-gray-400">{stats.currentStreak}/7</span>
+                  </div>
+                  <Progress value={(stats.currentStreak / 7) * 100} />
                 </div>
               </div>
             </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Navigation */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+              <h2 className="text-lg font-semibold text-white mb-4">Navigate</h2>
+              <div className="space-y-2">
+                {[
+                  { name: 'Interview Practice', path: '/interview', icon: <Mic className="w-4 h-4" /> },
+                  { name: 'Career Roadmap', path: '/career-roadmap', icon: <MapPin className="w-4 h-4" /> },
+                  { name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileText className="w-4 h-4" /> },
+                  { name: 'Job Applications', path: '/jobs', icon: <Briefcase className="w-4 h-4" /> },
+                  { name: 'Analytics', path: '/analytics', icon: <BarChart3 className="w-4 h-4" /> }
+                ].map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center p-3 text-left text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    {item.icon}
+                    <span className="ml-3">{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            {/* Gamification Component */}
+            <Gamification />
           </div>
         </div>
-
-        {/* Recommendations */}
-        <Card className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 backdrop-blur-lg border-white/10 p-8 mt-8">
-          <h3 className="text-xl font-semibold text-white mb-4">Recommended for You</h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-start space-x-4">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <Mic className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h4 className="text-white font-medium mb-1">Practice Behavioral Questions</h4>
-                <p className="text-gray-400 text-sm">Based on your target role, focus on leadership scenarios</p>
-                <Button size="sm" className="mt-2 bg-purple-500 hover:bg-purple-600">
-                  Start Practice
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-start space-x-4">
-              <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div>
-                <h4 className="text-white font-medium mb-1">Google Interview Prep</h4>
-                <p className="text-gray-400 text-sm">You've applied to Google - practice their specific format</p>
-                <Button size="sm" className="mt-2 bg-cyan-500 hover:bg-cyan-600">
-                  Practice Now
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </main>
+      </div>
     </div>
   );
 };
