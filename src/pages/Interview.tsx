@@ -1,11 +1,20 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy } from 'lucide-react';
+
+interface AIPersonality {
+  id: string;
+  name: string;
+  description: string;
+  style: string;
+  icon: React.ReactNode;
+  color: string;
+  traits: string[];
+}
 
 interface Question {
   id: string;
@@ -13,22 +22,29 @@ interface Question {
   type: 'technical' | 'behavioral' | 'situational';
   timeLimit: number;
   difficulty: 'easy' | 'medium' | 'hard';
+  personalityContext?: string;
 }
 
 interface InterviewSession {
   id: string;
   company: string;
   type: string;
+  personalityId: string;
   questions: Question[];
   responses: {
     questionId: string;
     audioBlob: string;
     duration: number;
     score: number;
+    confidence: number;
+    eyeContact: number;
+    speechClarity: number;
   }[];
   startTime: Date;
   endTime?: Date;
   overallScore: number;
+  confidenceScore: number;
+  communicationScore: number;
 }
 
 const Interview = () => {
@@ -36,6 +52,7 @@ const Interview = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [selectedPersonality, setSelectedPersonality] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -46,8 +63,50 @@ const Interview = () => {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [liveConfidence, setLiveConfidence] = useState(75);
+  const [eyeContactScore, setEyeContactScore] = useState(80);
+  const [speechClarityScore, setSpeechClarityScore] = useState(85);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const aiPersonalities: AIPersonality[] = [
+    {
+      id: 'professional',
+      name: 'Professional Alex',
+      description: 'Formal, structured approach with detailed feedback',
+      style: 'Direct and thorough questioning style',
+      icon: <User className="w-6 h-6" />,
+      color: 'from-blue-500 to-indigo-600',
+      traits: ['Formal', 'Detailed', 'Structured', 'Analytical']
+    },
+    {
+      id: 'friendly',
+      name: 'Friendly Sam',
+      description: 'Warm, encouraging style that builds confidence',
+      style: 'Supportive and conversational approach',
+      icon: <Trophy className="w-6 h-6" />,
+      color: 'from-green-500 to-emerald-600',
+      traits: ['Encouraging', 'Warm', 'Patient', 'Supportive']
+    },
+    {
+      id: 'technical',
+      name: 'Technical Morgan',
+      description: 'Deep technical focus with challenging questions',
+      style: 'Technical depth and problem-solving focus',
+      icon: <Brain className="w-6 h-6" />,
+      color: 'from-purple-500 to-violet-600',
+      traits: ['Technical', 'Challenging', 'Precise', 'Deep']
+    },
+    {
+      id: 'executive',
+      name: 'Executive Jordan',
+      description: 'Senior-level scenarios and strategic thinking',
+      style: 'High-level strategic and leadership focus',
+      icon: <Briefcase className="w-6 h-6" />,
+      color: 'from-orange-500 to-red-600',
+      traits: ['Strategic', 'Leadership', 'Vision', 'Results']
+    }
+  ];
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -58,42 +117,97 @@ const Interview = () => {
     setCurrentUser(JSON.parse(user));
   }, [navigate]);
 
+  // Simulate real-time confidence and metrics updates
+  useEffect(() => {
+    if (isRecording) {
+      const interval = setInterval(() => {
+        setLiveConfidence(prev => Math.max(40, Math.min(100, prev + (Math.random() - 0.5) * 10)));
+        setEyeContactScore(prev => Math.max(50, Math.min(100, prev + (Math.random() - 0.5) * 8)));
+        setSpeechClarityScore(prev => Math.max(60, Math.min(100, prev + (Math.random() - 0.5) * 6)));
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isRecording]);
+
   const companyQuestions = {
     google: {
       technical: [
-        { id: '1', text: 'Implement an LRU Cache with O(1) get and put operations.', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const },
-        { id: '2', text: 'Design a system to handle 1 billion daily active users for a social media platform.', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const },
-        { id: '3', text: 'How would you find the longest palindromic substring in a given string?', type: 'technical' as const, timeLimit: 120, difficulty: 'medium' as const }
+        { 
+          id: '1', 
+          text: 'Implement an LRU Cache with O(1) get and put operations.', 
+          type: 'technical' as const, 
+          timeLimit: 120, 
+          difficulty: 'hard' as const,
+          personalityContext: 'Focus on your approach to system design and optimization.'
+        },
+        { 
+          id: '2', 
+          text: 'Design a system to handle 1 billion daily active users for a social media platform.', 
+          type: 'technical' as const, 
+          timeLimit: 120, 
+          difficulty: 'hard' as const,
+          personalityContext: 'Walk me through your scalability considerations.'
+        }
       ],
       behavioral: [
-        { id: '4', text: 'Tell me about a time you had to influence someone without having direct authority over them.', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const },
-        { id: '5', text: 'Describe a situation where you had to work with ambiguous requirements.', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const }
+        { 
+          id: '4', 
+          text: 'Tell me about a time you had to influence someone without having direct authority over them.', 
+          type: 'behavioral' as const, 
+          timeLimit: 120, 
+          difficulty: 'medium' as const,
+          personalityContext: 'I\'m interested in your leadership and influence strategies.'
+        }
       ]
     },
     meta: {
       technical: [
-        { id: '6', text: 'Design the architecture for a real-time chat system like WhatsApp.', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const },
-        { id: '7', text: 'How would you optimize the news feed algorithm for better user engagement?', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const }
+        { 
+          id: '6', 
+          text: 'Design the architecture for a real-time chat system like WhatsApp.', 
+          type: 'technical' as const, 
+          timeLimit: 120, 
+          difficulty: 'hard' as const,
+          personalityContext: 'Consider the real-time aspects and user experience.'
+        }
       ],
       behavioral: [
-        { id: '8', text: 'Give me an example of when you moved fast and broke things. How did you handle it?', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const },
-        { id: '9', text: 'How would you improve Instagram Stories feature?', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const }
+        { 
+          id: '8', 
+          text: 'Give me an example of when you moved fast and broke things. How did you handle it?', 
+          type: 'behavioral' as const, 
+          timeLimit: 120, 
+          difficulty: 'medium' as const,
+          personalityContext: 'Show me how you balance speed with quality.'
+        }
       ]
     },
     amazon: {
       technical: [
-        { id: '10', text: 'Design a distributed storage system like S3.', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const },
-        { id: '11', text: 'Implement a recommendation system for e-commerce products.', type: 'technical' as const, timeLimit: 120, difficulty: 'hard' as const }
+        { 
+          id: '10', 
+          text: 'Design a distributed storage system like S3.', 
+          type: 'technical' as const, 
+          timeLimit: 120, 
+          difficulty: 'hard' as const,
+          personalityContext: 'Focus on reliability and customer obsession in your design.'
+        }
       ],
       behavioral: [
-        { id: '12', text: 'Tell me about a time you had to make a decision with incomplete information (Bias for Action).', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const },
-        { id: '13', text: 'Describe a situation where you had to dive deep into a problem (Dive Deep).', type: 'behavioral' as const, timeLimit: 120, difficulty: 'medium' as const }
+        { 
+          id: '12', 
+          text: 'Tell me about a time you had to make a decision with incomplete information (Bias for Action).', 
+          type: 'behavioral' as const, 
+          timeLimit: 120, 
+          difficulty: 'medium' as const,
+          personalityContext: 'Demonstrate how you embody our leadership principles.'
+        }
       ]
     }
   };
 
   const startInterview = () => {
-    if (!selectedCompany || !selectedType) return;
+    if (!selectedCompany || !selectedType || !selectedPersonality) return;
     
     const companyQuestionSet = companyQuestions[selectedCompany as keyof typeof companyQuestions];
     const typeQuestions = companyQuestionSet[selectedType as keyof typeof companyQuestionSet] || [];
@@ -179,12 +293,14 @@ const Interview = () => {
       questionId: questions[currentQuestionIndex].id,
       audioBlob: base64Audio,
       duration: 120 - timeLeft,
-      score: Math.floor(Math.random() * 30) + 70 // Simulated score 70-100
+      score: Math.floor(Math.random() * 30) + 70,
+      confidence: liveConfidence,
+      eyeContact: eyeContactScore,
+      speechClarity: speechClarityScore
     };
     
     setRecordedResponses(prev => [...prev, response]);
     
-    // Move to next question or complete session
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setTimeLeft(120);
@@ -208,24 +324,23 @@ const Interview = () => {
       id: Date.now().toString(),
       company: selectedCompany,
       type: selectedType,
+      personalityId: selectedPersonality,
       questions,
       responses: recordedResponses,
       startTime: new Date(),
       endTime: new Date(),
-      overallScore: recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length
+      overallScore: recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length,
+      confidenceScore: recordedResponses.reduce((acc, r) => acc + r.confidence, 0) / recordedResponses.length,
+      communicationScore: recordedResponses.reduce((acc, r) => acc + (r.eyeContact + r.speechClarity) / 2, 0) / recordedResponses.length
     };
     
-    // Save session to localStorage
     const sessions = JSON.parse(localStorage.getItem('interviewSessions') || '[]');
     sessions.push(session);
     localStorage.setItem('interviewSessions', JSON.stringify(sessions));
     
-    // Update user stats
     updateUserStats(session);
-    
     setSessionComplete(true);
     
-    // Clean up
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -236,6 +351,8 @@ const Interview = () => {
     stats.totalInterviews = (stats.totalInterviews || 0) + 1;
     stats.averageScore = ((stats.averageScore || 0) + session.overallScore) / 2;
     stats.lastSessionDate = new Date().toISOString();
+    stats.confidenceAvg = ((stats.confidenceAvg || 0) + session.confidenceScore) / 2;
+    stats.communicationAvg = ((stats.communicationAvg || 0) + session.communicationScore) / 2;
     localStorage.setItem('userStats', JSON.stringify(stats));
   };
 
@@ -243,6 +360,10 @@ const Interview = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getPersonalityById = (id: string) => {
+    return aiPersonalities.find(p => p.id === id);
   };
 
   if (!currentUser) {
@@ -261,24 +382,32 @@ const Interview = () => {
             <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-4">Interview Complete!</h2>
             <p className="text-gray-300 mb-6">
-              You completed {questions.length} questions for {selectedCompany}
+              You completed {questions.length} questions with {getPersonalityById(selectedPersonality)?.name}
             </p>
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-2xl font-bold text-white">
-                  {recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length}%
+                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length)}%
                 </div>
                 <div className="text-gray-400">Overall Score</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-white">{questions.length}</div>
-                <div className="text-gray-400">Questions</div>
+                <div className="text-2xl font-bold text-cyan-400">
+                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.confidence, 0) / recordedResponses.length)}%
+                </div>
+                <div className="text-gray-400">Confidence</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-white">
-                  {Math.floor(recordedResponses.reduce((acc, r) => acc + r.duration, 0) / 60)}m
+                <div className="text-2xl font-bold text-green-400">
+                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.eyeContact, 0) / recordedResponses.length)}%
                 </div>
-                <div className="text-gray-400">Total Time</div>
+                <div className="text-gray-400">Eye Contact</div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="text-2xl font-bold text-yellow-400">
+                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.speechClarity, 0) / recordedResponses.length)}%
+                </div>
+                <div className="text-gray-400">Speech Clarity</div>
               </div>
             </div>
             <div className="flex gap-4 justify-center">
@@ -318,7 +447,7 @@ const Interview = () => {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-white">AI Interview Practice</h1>
-              <p className="text-sm text-gray-400">Real interview simulation with voice recording</p>
+              <p className="text-sm text-gray-400">Real interview simulation with AI personalities</p>
             </div>
           </div>
         </div>
@@ -328,6 +457,37 @@ const Interview = () => {
         {!sessionStarted ? (
           /* Setup Phase */
           <div className="space-y-8">
+            {/* AI Personality Selection */}
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
+              <h2 className="text-2xl font-bold text-white mb-6">Choose Your AI Interviewer</h2>
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                {aiPersonalities.map(personality => (
+                  <button
+                    key={personality.id}
+                    onClick={() => setSelectedPersonality(personality.id)}
+                    className={`p-6 rounded-lg border-2 transition-all text-left ${
+                      selectedPersonality === personality.id
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${personality.color} flex items-center justify-center text-white mb-4`}>
+                      {personality.icon}
+                    </div>
+                    <h3 className="text-white font-semibold text-lg mb-2">{personality.name}</h3>
+                    <p className="text-gray-300 text-sm mb-3">{personality.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {personality.traits.map(trait => (
+                        <Badge key={trait} variant="outline" className="border-gray-500 text-gray-300 text-xs">
+                          {trait}
+                        </Badge>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
               <h2 className="text-2xl font-bold text-white mb-6">Setup Your Interview</h2>
               
@@ -346,11 +506,6 @@ const Interview = () => {
                         }`}
                       >
                         <div className="text-white font-medium capitalize">{company}</div>
-                        <div className="text-gray-400 text-sm">
-                          {company === 'google' && 'System design, coding, leadership'}
-                          {company === 'meta' && 'Product sense, execution, culture'}
-                          {company === 'amazon' && '14 leadership principles, customer obsession'}
-                        </div>
                       </button>
                     ))}
                   </div>
@@ -370,10 +525,6 @@ const Interview = () => {
                         }`}
                       >
                         <div className="text-white font-medium capitalize">{type}</div>
-                        <div className="text-gray-400 text-sm">
-                          {type === 'technical' && 'Coding, system design, algorithms'}
-                          {type === 'behavioral' && 'STAR method, leadership, culture fit'}
-                        </div>
                       </button>
                     ))}
                   </div>
@@ -382,57 +533,81 @@ const Interview = () => {
 
               <Button
                 onClick={startInterview}
-                disabled={!selectedCompany || !selectedType}
+                disabled={!selectedCompany || !selectedType || !selectedPersonality}
                 className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
               >
-                Start Interview Session
+                Start Interview with {selectedPersonality ? getPersonalityById(selectedPersonality)?.name : 'AI'}
               </Button>
             </Card>
           </div>
         ) : (
           /* Interview Phase */
           <div className="space-y-6">
-            {/* Progress */}
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Question {currentQuestionIndex + 1} of {questions.length}
-                  </h3>
-                  <p className="text-gray-400">
-                    {selectedCompany} • {selectedType}
-                  </p>
+            {/* Progress and Live Metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2 bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Question {currentQuestionIndex + 1} of {questions.length}
+                    </h3>
+                    <p className="text-gray-400">
+                      {selectedCompany} • {selectedType} • {getPersonalityById(selectedPersonality)?.name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-white">{formatTime(timeLeft)}</div>
+                    <div className="text-gray-400">Time remaining</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">{formatTime(timeLeft)}</div>
-                  <div className="text-gray-400">Time remaining</div>
+                <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-4" />
+                <Progress value={(timeLeft / 120) * 100} className="h-2" />
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
+                <h4 className="text-white font-semibold mb-4">Live Metrics</h4>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-gray-300 text-sm">Confidence</span>
+                      <span className="text-cyan-400 font-semibold">{Math.round(liveConfidence)}%</span>
+                    </div>
+                    <Progress value={liveConfidence} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-gray-300 text-sm">Eye Contact</span>
+                      <span className="text-green-400 font-semibold">{Math.round(eyeContactScore)}%</span>
+                    </div>
+                    <Progress value={eyeContactScore} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-gray-300 text-sm">Speech Clarity</span>
+                      <span className="text-yellow-400 font-semibold">{Math.round(speechClarityScore)}%</span>
+                    </div>
+                    <Progress value={speechClarityScore} className="h-2" />
+                  </div>
                 </div>
-              </div>
-              <Progress 
-                value={((currentQuestionIndex + 1) / questions.length) * 100} 
-                className="mb-4"
-              />
-              <Progress 
-                value={(timeLeft / 120) * 100} 
-                className="h-2"
-              />
-            </Card>
+              </Card>
+            </div>
 
             {/* Current Question */}
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
               <div className="mb-6">
-                <Badge 
-                  className={`mb-4 ${
-                    questions[currentQuestionIndex]?.type === 'technical' 
-                      ? 'bg-blue-500/20 text-blue-400' 
-                      : 'bg-green-500/20 text-green-400'
-                  }`}
-                >
+                <Badge className="mb-4 bg-blue-500/20 text-blue-400">
                   {questions[currentQuestionIndex]?.type}
                 </Badge>
                 <h2 className="text-xl font-semibold text-white mb-4">
                   {questions[currentQuestionIndex]?.text}
                 </h2>
+                {questions[currentQuestionIndex]?.personalityContext && (
+                  <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4 mb-4">
+                    <p className="text-purple-200 text-sm">
+                      <strong>{getPersonalityById(selectedPersonality)?.name}:</strong> {questions[currentQuestionIndex]?.personalityContext}
+                    </p>
+                  </div>
+                )}
                 <p className="text-gray-400">
                   Take your time to think, then click the microphone to start recording your response.
                 </p>
@@ -476,27 +651,6 @@ const Interview = () => {
                 )}
               </div>
             </Card>
-
-            {/* Response History */}
-            {recordedResponses.length > 0 && (
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Previous Responses</h3>
-                <div className="space-y-3">
-                  {recordedResponses.map((response, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
-                      <div>
-                        <div className="text-white font-medium">Question {index + 1}</div>
-                        <div className="text-gray-400 text-sm">{response.duration}s</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-white font-medium">{response.score}%</div>
-                        <div className="text-gray-400 text-sm">Score</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
           </div>
         )}
       </main>
