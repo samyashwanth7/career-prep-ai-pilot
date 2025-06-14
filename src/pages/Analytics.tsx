@@ -23,6 +23,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import AIInsights from '@/components/AIInsights';
+import AIAssistant from '@/components/AIAssistant';
 
 interface AnalyticsData {
   totalInterviews: number;
@@ -170,7 +172,7 @@ const Analytics = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-white">Performance Analytics</h1>
-              <p className="text-gray-300">Detailed insights into your interview progress</p>
+              <p className="text-gray-300">AI-powered insights into your interview progress</p>
             </div>
           </div>
           
@@ -187,6 +189,11 @@ const Analytics = () => {
               </Button>
             ))}
           </div>
+        </div>
+
+        {/* AI Insights - New section */}
+        <div className="mb-8">
+          <AIInsights analyticsData={analyticsData} />
         </div>
 
         {/* Key Metrics */}
@@ -396,6 +403,9 @@ const Analytics = () => {
           </div>
         </Card>
       </div>
+      
+      {/* AI Assistant */}
+      <AIAssistant context="analytics" />
     </div>
   );
 };

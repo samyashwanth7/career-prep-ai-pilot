@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -25,6 +24,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
+import AIAssistant from '@/components/AIAssistant';
 
 interface AnalysisResult {
   overallScore: number;
@@ -314,7 +314,7 @@ const ResumeAnalyzer = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-white">AI Resume Analyzer</h1>
-              <p className="text-gray-300">Advanced resume optimization with OCR technology</p>
+              <p className="text-gray-300">Advanced resume optimization with AI-powered OCR technology</p>
             </div>
           </div>
         </div>
@@ -323,7 +323,10 @@ const ResumeAnalyzer = () => {
           {/* Upload and Settings */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Upload Resume</h2>
+              <div className="flex items-center space-x-2 mb-4">
+                <Brain className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-xl font-semibold text-white">AI-Powered Analysis</h2>
+              </div>
               
               <div className="space-y-4">
                 <div>
@@ -364,7 +367,7 @@ const ResumeAnalyzer = () => {
                       <div>
                         <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-white font-medium">Upload your resume</p>
-                        <p className="text-gray-400 text-sm">PDF, TXT, PNG, JPG supported</p>
+                        <p className="text-gray-400 text-sm">PDF, TXT, PNG, JPG supported with AI OCR</p>
                       </div>
                     )}
                   </label>
@@ -372,11 +375,14 @@ const ResumeAnalyzer = () => {
 
                 {isProcessing && (
                   <div className="space-y-3">
-                    <div className="text-center text-white">{processingStep}</div>
+                    <div className="text-center text-white flex items-center justify-center space-x-2">
+                      <Brain className="w-4 h-4 text-cyan-400 animate-pulse" />
+                      <span>{processingStep}</span>
+                    </div>
                     {ocrProgress > 0 && (
                       <div>
                         <div className="flex justify-between text-sm text-gray-300 mb-1">
-                          <span>OCR Progress</span>
+                          <span>AI OCR Progress</span>
                           <span>{ocrProgress}%</span>
                         </div>
                         <Progress value={ocrProgress} className="h-2" />
@@ -396,7 +402,7 @@ const ResumeAnalyzer = () => {
                     ) : (
                       <Brain className="w-4 h-4 mr-2" />
                     )}
-                    Analyze Resume
+                    Analyze with AI
                   </Button>
                 )}
               </div>
@@ -404,13 +410,16 @@ const ResumeAnalyzer = () => {
 
             {extractedText && (
               <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Extracted Text Preview</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">AI Extracted Text Preview</h3>
                 <div className="bg-black/20 rounded-lg p-4 max-h-60 overflow-y-auto">
                   <pre className="text-gray-300 text-sm whitespace-pre-wrap">
                     {extractedText.slice(0, 500)}
                     {extractedText.length > 500 && '...'}
                   </pre>
                 </div>
+                <Badge className="mt-2 bg-cyan-500/20 text-cyan-300 text-xs">
+                  Processed by AI OCR
+                </Badge>
               </Card>
             )}
           </div>
@@ -422,10 +431,20 @@ const ResumeAnalyzer = () => {
                 {/* Overall Score */}
                 <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white">Analysis Results</h2>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center">
+                        <Brain className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">AI Analysis Results</h2>
+                        <Badge className="bg-purple-500/20 text-purple-300 text-sm">
+                          Powered by Advanced AI
+                        </Badge>
+                      </div>
+                    </div>
                     <div className="text-right">
                       <div className="text-3xl font-bold text-white">{analysisResult.overallScore}/100</div>
-                      <div className="text-gray-400">Overall Score</div>
+                      <div className="text-gray-400">AI Score</div>
                     </div>
                   </div>
 
@@ -450,21 +469,21 @@ const ResumeAnalyzer = () => {
                       className="bg-green-500 hover:bg-green-600"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download Optimized
+                      Download AI-Optimized
                     </Button>
                     <Button
                       variant="outline"
                       className="border-white/20 text-white hover:bg-white/10"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Get Pro Tips
+                      Get AI Pro Tips
                     </Button>
                   </div>
                 </Card>
 
                 {/* Section Scores */}
                 <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Section Analysis</h3>
+                  <h3 className="text-xl font-semibold text-white mb-6">AI Section Analysis</h3>
                   <div className="space-y-4">
                     {Object.entries(analysisResult.sections).map(([section, data]) => (
                       <div key={section} className="bg-white/5 rounded-lg p-4">
@@ -485,7 +504,7 @@ const ResumeAnalyzer = () => {
                         <div className="text-gray-300 text-sm">
                           {data.suggestions.slice(0, 2).map((suggestion, idx) => (
                             <div key={idx} className="flex items-start">
-                              <span className="text-cyan-400 mr-2">•</span>
+                              <Brain className="w-3 h-3 text-cyan-400 mr-2 mt-1 flex-shrink-0" />
                               {suggestion}
                             </div>
                           ))}
@@ -497,10 +516,13 @@ const ResumeAnalyzer = () => {
 
                 {/* Skills Analysis */}
                 <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Skills Analysis</h3>
+                  <h3 className="text-xl font-semibold text-white mb-6">AI Skills Analysis</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-green-400 font-medium mb-3">Found Skills</h4>
+                      <h4 className="text-green-400 font-medium mb-3 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Found Skills
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {analysisResult.sections.keywords.found.map(skill => (
                           <Badge key={skill} className="bg-green-500/20 text-green-400">
@@ -510,7 +532,10 @@ const ResumeAnalyzer = () => {
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-red-400 font-medium mb-3">Missing Skills</h4>
+                      <h4 className="text-red-400 font-medium mb-3 flex items-center">
+                        <Target className="w-4 h-4 mr-2" />
+                        AI Recommended Skills
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {analysisResult.sections.keywords.missing.slice(0, 6).map(skill => (
                           <Badge key={skill} className="bg-red-500/20 text-red-400">
@@ -524,7 +549,13 @@ const ResumeAnalyzer = () => {
 
                 {/* Job Matches */}
                 <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-6">Job Matches</h3>
+                  <div className="flex items-center space-x-2 mb-6">
+                    <Users className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-xl font-semibold text-white">AI Job Matches</h3>
+                    <Badge className="bg-cyan-500/20 text-cyan-300 text-xs">
+                      ML Powered
+                    </Badge>
+                  </div>
                   <div className="space-y-4">
                     {jobMatches.map((job, index) => (
                       <div key={index} className="bg-white/5 rounded-lg p-4">
@@ -534,14 +565,17 @@ const ResumeAnalyzer = () => {
                             <p className="text-gray-400">{job.company}</p>
                           </div>
                           <div className="text-right">
-                            <div className="text-green-400 font-semibold">{job.matchScore}% match</div>
+                            <div className="text-green-400 font-semibold">{job.matchScore}% AI match</div>
                             <div className="text-gray-400 text-sm">{job.salary}</div>
                           </div>
                         </div>
                         {job.missingSkills.length > 0 && (
                           <div>
-                            <span className="text-yellow-400 text-sm">Missing skills: </span>
-                            <span className="text-gray-300 text-sm">{job.missingSkills.join(', ')}</span>
+                            <span className="text-yellow-400 text-sm flex items-center">
+                              <Brain className="w-3 h-3 mr-1" />
+                              Skills to add:
+                            </span>
+                            <span className="text-gray-300 text-sm ml-4">{job.missingSkills.join(', ')}</span>
                           </div>
                         )}
                       </div>
@@ -551,14 +585,19 @@ const ResumeAnalyzer = () => {
               </>
             ) : (
               <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-12 text-center">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Ready to Analyze</h3>
-                <p className="text-gray-400">Upload your resume and click analyze to get detailed insights</p>
+                <div className="w-16 h-16 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center mx-auto mb-4">
+                  <Brain className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">AI Ready to Analyze</h3>
+                <p className="text-gray-400">Upload your resume and our AI will provide detailed insights and optimization suggestions</p>
               </Card>
             )}
           </div>
         </div>
       </div>
+      
+      {/* AI Assistant */}
+      <AIAssistant context="resume-analyzer" />
     </div>
   );
 };

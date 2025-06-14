@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy, Lightbulb, Sparkles } from 'lucide-react';
+import AIAssistant from '@/components/AIAssistant';
 
 interface AIPersonality {
   id: string;
@@ -107,6 +108,78 @@ const Interview = () => {
       traits: ['Strategic', 'Leadership', 'Vision', 'Results']
     }
   ];
+
+  // Add AI suggestions function
+  const getAIPersonalitySuggestion = () => {
+    const userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
+    const confidenceAvg = userStats.confidenceAvg || 75;
+    const averageScore = userStats.averageScore || 70;
+    
+    if (confidenceAvg < 70) {
+      return {
+        suggested: 'friendly',
+        reason: 'Recommended for building confidence and reducing interview anxiety'
+      };
+    } else if (averageScore > 85) {
+      return {
+        suggested: 'executive',
+        reason: 'You\'re ready for senior-level challenging scenarios'
+      };
+    } else if (selectedType === 'technical') {
+      return {
+        suggested: 'technical',
+        reason: 'Perfect match for technical interview preparation'
+      };
+    } else {
+      return {
+        suggested: 'professional',
+        reason: 'Well-rounded approach suitable for most interviews'
+      };
+    }
+  };
+
+  // Add AI coaching tips
+  const getAICoachingTips = () => {
+    const tips = [
+      {
+        icon: <Brain className="w-4 h-4" />,
+        title: "Structure Your Response",
+        description: "Use the STAR method: Situation, Task, Action, Result"
+      },
+      {
+        icon: <Lightbulb className="w-4 h-4" />,
+        title: "Be Specific",
+        description: "Include concrete numbers and measurable outcomes"
+      },
+      {
+        icon: <Sparkles className="w-4 h-4" />,
+        title: "Show Growth",
+        description: "Explain what you learned and how you'd apply it"
+      }
+    ];
+    
+    if (selectedType === 'technical') {
+      return [
+        {
+          icon: <Brain className="w-4 h-4" />,
+          title: "Think Out Loud",
+          description: "Verbalize your problem-solving process"
+        },
+        {
+          icon: <Lightbulb className="w-4 h-4" />,
+          title: "Consider Edge Cases",
+          description: "Discuss potential issues and optimizations"
+        },
+        {
+          icon: <Sparkles className="w-4 h-4" />,
+          title: "Ask Clarifying Questions",
+          description: "Ensure you understand the requirements fully"
+        }
+      ];
+    }
+    
+    return tips;
+  };
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
@@ -384,12 +457,19 @@ const Interview = () => {
             <p className="text-gray-300 mb-6">
               You completed {questions.length} questions with {getPersonalityById(selectedPersonality)?.name}
             </p>
+            
+            {/* AI-Enhanced Results */}
             <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-2xl font-bold text-white">
                   {Math.round(recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length)}%
                 </div>
                 <div className="text-gray-400">Overall Score</div>
+                <div className="mt-2">
+                  <Badge className="bg-purple-500/20 text-purple-300 text-xs">
+                    AI Analyzed
+                  </Badge>
+                </div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-2xl font-bold text-cyan-400">
@@ -410,12 +490,39 @@ const Interview = () => {
                 <div className="text-gray-400">Speech Clarity</div>
               </div>
             </div>
+
+            {/* AI Recommendations */}
+            <Card className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 p-6 mb-6 text-left">
+              <div className="flex items-center space-x-2 mb-4">
+                <Brain className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-white font-semibold">AI Recommendations</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-green-400 font-medium mb-2">Strengths Identified</h4>
+                  <ul className="text-gray-300 text-sm space-y-1">
+                    <li>• Strong technical communication</li>
+                    <li>• Good use of examples</li>
+                    <li>• Confident delivery</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-yellow-400 font-medium mb-2">Areas to Improve</h4>
+                  <ul className="text-gray-300 text-sm space-y-1">
+                    <li>• Add more specific metrics</li>
+                    <li>• Practice technical depth</li>
+                    <li>• Improve pacing</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+            
             <div className="flex gap-4 justify-center">
               <Button
                 onClick={() => navigate('/analytics')}
                 className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
               >
-                View Analytics
+                View AI Analytics
               </Button>
               <Button
                 onClick={() => window.location.reload()}
@@ -427,6 +534,7 @@ const Interview = () => {
             </div>
           </Card>
         </div>
+        <AIAssistant context="interview-complete" />
       </div>
     );
   }
@@ -459,32 +567,61 @@ const Interview = () => {
           <div className="space-y-8">
             {/* AI Personality Selection */}
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">Choose Your AI Interviewer</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Choose Your AI Interviewer</h2>
+                {(() => {
+                  const suggestion = getAIPersonalitySuggestion();
+                  return (
+                    <div className="flex items-center space-x-2">
+                      <Brain className="w-4 h-4 text-cyan-400" />
+                      <span className="text-cyan-400 text-sm">AI Suggests: {aiPersonalities.find(p => p.id === suggestion.suggested)?.name}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+              
               <div className="grid md:grid-cols-2 gap-6 mb-8">
-                {aiPersonalities.map(personality => (
-                  <button
-                    key={personality.id}
-                    onClick={() => setSelectedPersonality(personality.id)}
-                    className={`p-6 rounded-lg border-2 transition-all text-left ${
-                      selectedPersonality === personality.id
-                        ? 'border-purple-500 bg-purple-500/20'
-                        : 'border-white/20 bg-white/5 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${personality.color} flex items-center justify-center text-white mb-4`}>
-                      {personality.icon}
-                    </div>
-                    <h3 className="text-white font-semibold text-lg mb-2">{personality.name}</h3>
-                    <p className="text-gray-300 text-sm mb-3">{personality.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {personality.traits.map(trait => (
-                        <Badge key={trait} variant="outline" className="border-gray-500 text-gray-300 text-xs">
-                          {trait}
-                        </Badge>
-                      ))}
-                    </div>
-                  </button>
-                ))}
+                {aiPersonalities.map(personality => {
+                  const suggestion = getAIPersonalitySuggestion();
+                  const isRecommended = personality.id === suggestion.suggested;
+                  
+                  return (
+                    <button
+                      key={personality.id}
+                      onClick={() => setSelectedPersonality(personality.id)}
+                      className={`p-6 rounded-lg border-2 transition-all text-left relative ${
+                        selectedPersonality === personality.id
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : isRecommended
+                          ? 'border-cyan-500 bg-cyan-500/10'
+                          : 'border-white/20 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      {isRecommended && (
+                        <div className="absolute top-2 right-2">
+                          <Badge className="bg-cyan-500/20 text-cyan-300 text-xs">
+                            AI Recommended
+                          </Badge>
+                        </div>
+                      )}
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${personality.color} flex items-center justify-center text-white mb-4`}>
+                        {personality.icon}
+                      </div>
+                      <h3 className="text-white font-semibold text-lg mb-2">{personality.name}</h3>
+                      <p className="text-gray-300 text-sm mb-3">{personality.description}</p>
+                      {isRecommended && (
+                        <p className="text-cyan-300 text-xs mb-3 italic">{suggestion.reason}</p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {personality.traits.map(trait => (
+                          <Badge key={trait} variant="outline" className="border-gray-500 text-gray-300 text-xs">
+                            {trait}
+                          </Badge>
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </Card>
 
@@ -531,12 +668,33 @@ const Interview = () => {
                 </div>
               </div>
 
+              {/* AI Coaching Tips */}
+              {selectedType && (
+                <Card className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 p-6 mb-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Brain className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-white font-semibold">AI Coaching Tips for {selectedType} interviews</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {getAICoachingTips().map((tip, index) => (
+                      <div key={index} className="bg-white/10 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="text-cyan-400">{tip.icon}</div>
+                          <h4 className="text-white font-medium text-sm">{tip.title}</h4>
+                        </div>
+                        <p className="text-gray-300 text-xs">{tip.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
               <Button
                 onClick={startInterview}
                 disabled={!selectedCompany || !selectedType || !selectedPersonality}
                 className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
               >
-                Start Interview with {selectedPersonality ? getPersonalityById(selectedPersonality)?.name : 'AI'}
+                Start AI Interview with {selectedPersonality ? getPersonalityById(selectedPersonality)?.name : 'AI'}
               </Button>
             </Card>
           </div>
@@ -565,7 +723,10 @@ const Interview = () => {
               </Card>
 
               <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                <h4 className="text-white font-semibold mb-4">Live Metrics</h4>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Brain className="w-4 h-4 text-cyan-400" />
+                  <h4 className="text-white font-semibold">Live AI Metrics</h4>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-1">
@@ -654,6 +815,9 @@ const Interview = () => {
           </div>
         )}
       </main>
+      
+      {/* AI Assistant */}
+      <AIAssistant context="interview" />
     </div>
   );
 };
