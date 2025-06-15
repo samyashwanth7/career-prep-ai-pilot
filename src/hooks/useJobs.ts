@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Job, JobApplication, JobFilters } from '@/types/job';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useJobs = () => {
   const { toast } = useToast();
@@ -124,17 +125,33 @@ export const useJobs = () => {
       setFilteredJobs(JSON.parse(savedJobs));
     }
 
-    // Load job applications from Supabase
     import("@/integrations/supabase/jobs").then(async mod => {
       try {
-        const supaApps = await mod.fetchJobApplications(curUser.id);
-        setApplications(supaApps);
-        // Set up real-time subscription to applications
-        const channel = mod.subscribeToJobApplications(curUser.id, (payload: any) => {
-          // Re-fetch on any change
-          mod.fetchJobApplications(curUser.id).then(setApplications);
+        // maps raw data from supabase to JobApplication[]
+        const mapRowToJobApplication = (row: any): JobApplication => ({
+          id: row.id,
+          userId: row.user_id,
+          jobId: row.job_data?.id || "",
+          job: row.job_data || {},
+          resume: row.resume_url || "",
+          coverLetter: row.cover_letter || "",
+          status: (row.status as JobApplication["status"]) || "submitted",
+          appliedAt: row.applied_at || "",
+          lastUpdated: row.updated_at || "",
         });
-        return () => supabase.removeChannel(channel);
+
+        const supaAppsRaw = await mod.fetchJobApplications(curUser.id);
+        setApplications(supaAppsRaw.map(mapRowToJobApplication));
+
+        // --- Real-time subscription ---
+        const channel = mod.subscribeToJobApplications(curUser.id, async () => {
+          // Re-fetch and map
+          const updatedAppsRaw = await mod.fetchJobApplications(curUser.id);
+          setApplications(updatedAppsRaw.map(mapRowToJobApplication));
+        });
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } catch (err) {
         toast({ title: "Failed to load job applications", variant: "destructive" });
       }
@@ -195,13 +212,12 @@ export const useJobs = () => {
     try {
       let resumeUrl = "";
       if (resume) {
-        // In Phase 5: upload file to Supabase Storage and get URL
-        // For now, skip file upload
+        // Placeholder: In a future phase, this will upload file and get real URL
         resumeUrl = "";
       }
       let appliedCount = 0;
       for (const job of jobsToApply) {
-        const alreadyApplied = applications.find(app => app.job_id === job.id && app.user_id === currentUser.id);
+        const alreadyApplied = applications.find(app => app.jobId === job.id && app.userId === currentUser.id);
         if (alreadyApplied) continue;
         try {
           await import("@/integrations/supabase/jobs").then(mod =>
@@ -209,7 +225,6 @@ export const useJobs = () => {
           );
           appliedCount++;
         } catch (err) {
-          // Shows per-job error if needed
           toast({ title: "Failed to apply", description: (err as Error).message, variant: "destructive" });
         }
       }

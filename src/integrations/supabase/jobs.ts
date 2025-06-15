@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Job, JobApplication } from "@/types/job";
+import type { Job } from "@/types/job";
+
+// --- No change to fetchJobApplications ---
 
 export async function fetchJobApplications(userId: string) {
   const { data, error } = await supabase
@@ -20,7 +22,7 @@ export async function createJobApplication(userId: string, job: Job, resumeUrl: 
         user_id: userId,
         job_title: job.title,
         company: job.company,
-        job_data: job,
+        job_data: job as any,
         resume_url: resumeUrl,
         cover_letter: coverLetter,
         status: "submitted",
