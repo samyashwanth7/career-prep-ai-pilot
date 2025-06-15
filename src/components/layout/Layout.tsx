@@ -24,12 +24,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme, setTheme } = useThemeToggle();
 
   return (
-    <div className={`flex min-h-screen bg-background font-sans transition-colors`}>
+    <div className={`flex min-h-screen bg-background font-sans transition-main`}>
       <Sidebar />
-      <div className="flex-1 flex flex-col min-h-screen bg-background dark:bg-background-dark transition-colors">
+      <div className="flex-1 flex flex-col min-h-screen bg-background dark:bg-background-dark transition-main">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 h-16 border-b border-gray-200 dark:border-sidebar-border bg-white dark:bg-sidebar">
-          <div className="text-xl font-bold tracking-tight text-primary dark:text-white select-none">
+        <header className="flex items-center justify-between px-8 h-16 border-b border-sidebar-border bg-secondary dark:bg-sidebar transition-main">
+          <div className="text-xl font-bold tracking-tight text-primary dark:text-white select-none transition-main">
             MyCorpPro
           </div>
           <div>
@@ -41,14 +41,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               className="rounded-full"
             >
               {theme === "dark" ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
+                <Sun className="w-5 h-5 text-yellow-400 transition-main" />
               ) : (
-                <Moon className="w-5 h-5 text-gray-800" />
+                <Moon className="w-5 h-5 text-primary transition-main" />
               )}
             </Button>
           </div>
         </header>
-        <main className="p-8 flex-1 flex flex-col">{children}</main>
+        <main className="p-8 flex-1 flex flex-col animate-fade-in transition-main">{children}</main>
       </div>
     </div>
   );

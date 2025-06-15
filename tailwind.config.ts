@@ -25,28 +25,48 @@ export default {
 		extend: {
 			colors: {
 				primary: {
-					DEFAULT: "#2d3748", // slate-grey
+					DEFAULT: "#23395d", // Professional navy
 					foreground: "#fff",
-					light: "#4a5568"
+					light: "#38598b"
 				},
 				secondary: {
-					DEFAULT: "#e2e8f0", // light grey
-					foreground: "#2d3748"
+					DEFAULT: "#eaeaea", // off-white for cards
+					foreground: "#23395d"
 				},
 				background: {
-					DEFAULT: "#f6f8fa",
-					dark: "#1a202c",
+					DEFAULT: "#f5f7fa", // light gray-blue
+					dark: "#151f2c",    // rich slate for dark
 				},
 				sidebar: {
-					DEFAULT: '#22223b', 
-					foreground: '#f6f8fa',
-					border: '#393a54',
+					DEFAULT: "#23395d", // Navy for sidebar
+					foreground: "#fff",
+					border: "#334e73",
 				},
 				accent: {
-					DEFAULT: "#b3c0e5"
+					DEFAULT: "#70a1d7", // Soft blue accent
+					foreground: "#fff"
 				},
-				muted: { DEFAULT: "#718096", foreground: "#fff" }
+				muted: { DEFAULT: "#697289", foreground: "#fff" }
 			},
+			transitionProperty: {
+				'colors-bg': 'background-color, color, border-color, fill, stroke',
+				'opacity': 'opacity',
+			},
+			transitionDuration: {
+				DEFAULT: '300ms'
+			},
+			transitionTimingFunction: {
+				DEFAULT: 'ease-in-out'
+			},
+			animation: {
+				'fade-in': 'fade-in 0.3s ease-out',
+			},
+			keyframes: {
+				'fade-in': {
+					from: { opacity: '0', transform: 'translateY(12px)' },
+					to:   { opacity: '1', transform: 'translateY(0)' }
+				}
+			}
 		},
 	},
 	plugins: [require("tailwindcss-animate")],
