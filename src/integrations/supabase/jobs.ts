@@ -1,8 +1,13 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Job } from "@/types/job";
 
-// --- No change to fetchJobApplications ---
+// Helper to upload a resume file to Supabase Storage (Phase 5 foundation)
+export async function uploadResumeFile(userId: string, file: File): Promise<string> {
+  // bucket = 'resumes', path = `${userId}/${Date.now()}_${file.name}`
+  // This is a placeholder: actual upload requires pre-created bucket and RLS
+  // In Phase 5, create the bucket and RLS, then update code to upload
+  throw new Error("Resume file upload to Supabase Storage not yet implemented.");
+}
 
 export async function fetchJobApplications(userId: string) {
   const { data, error } = await supabase
