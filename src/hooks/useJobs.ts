@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Job, JobApplication, JobFilters } from '@/types/job';
@@ -10,11 +9,11 @@ export const useJobs = () => {
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [filters, setFilters] = useState<JobFilters>({
-    searchTerm: '',
-    locationFilter: 'all',
-    typeFilter: 'all',
-    experienceFilter: 'all',
-    salaryFilter: 'all'
+    searchTerm: "",
+    locationFilter: "all",
+    typeFilter: "all",
+    experienceFilter: "all",
+    salaryFilter: "all",
   });
 
   const sampleJobs: Job[] = [
@@ -111,21 +110,35 @@ export const useJobs = () => {
   ];
 
   useEffect(() => {
-    const savedJobs = localStorage.getItem('availableJobs');
+    const curUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+    if (!curUser?.id) return;
+
+    // Load jobs from localStorage as before (until jobs table migration done)
+    const savedJobs = localStorage.getItem("availableJobs");
     if (!savedJobs) {
-      localStorage.setItem('availableJobs', JSON.stringify(sampleJobs));
+      localStorage.setItem("availableJobs", JSON.stringify(sampleJobs));
       setJobs(sampleJobs);
       setFilteredJobs(sampleJobs);
     } else {
-      const parsedJobs = JSON.parse(savedJobs);
-      setJobs(parsedJobs);
-      setFilteredJobs(parsedJobs);
+      setJobs(JSON.parse(savedJobs));
+      setFilteredJobs(JSON.parse(savedJobs));
     }
 
-    const savedApplications = localStorage.getItem('jobApplications');
-    if (savedApplications) {
-      setApplications(JSON.parse(savedApplications));
-    }
+    // Load job applications from Supabase
+    import("@/integrations/supabase/jobs").then(async mod => {
+      try {
+        const supaApps = await mod.fetchJobApplications(curUser.id);
+        setApplications(supaApps);
+        // Set up real-time subscription to applications
+        const channel = mod.subscribeToJobApplications(curUser.id, (payload: any) => {
+          // Re-fetch on any change
+          mod.fetchJobApplications(curUser.id).then(setApplications);
+        });
+        return () => supabase.removeChannel(channel);
+      } catch (err) {
+        toast({ title: "Failed to load job applications", variant: "destructive" });
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -161,11 +174,11 @@ export const useJobs = () => {
 
   const clearFilters = () => {
     setFilters({
-      searchTerm: '',
-      locationFilter: 'all',
-      typeFilter: 'all',
-      experienceFilter: 'all',
-      salaryFilter: 'all'
+      searchTerm: "",
+      locationFilter: "all",
+      typeFilter: "all",
+      experienceFilter: "all",
+      salaryFilter: "all"
     });
   };
 
@@ -180,57 +193,38 @@ export const useJobs = () => {
 
   const applyToJobs = async (jobsToApply: Job[], resume: File | null, coverLetterText: string, currentUser: any) => {
     try {
-      let resumeBase64 = '';
+      let resumeUrl = "";
       if (resume) {
-        resumeBase64 = await fileToBase64(resume);
+        // In Phase 5: upload file to Supabase Storage and get URL
+        // For now, skip file upload
+        resumeUrl = "";
       }
-
-      const newApplications: JobApplication[] = [];
-      
+      let appliedCount = 0;
       for (const job of jobsToApply) {
-        const existingApplication = applications.find(app => 
-          app.jobId === job.id && app.userId === currentUser.id
-        );
-        
-        if (existingApplication) {
-          continue;
+        const alreadyApplied = applications.find(app => app.job_id === job.id && app.user_id === currentUser.id);
+        if (alreadyApplied) continue;
+        try {
+          await import("@/integrations/supabase/jobs").then(mod =>
+            mod.createJobApplication(currentUser.id, job, resumeUrl, coverLetterText)
+          );
+          appliedCount++;
+        } catch (err) {
+          // Shows per-job error if needed
+          toast({ title: "Failed to apply", description: (err as Error).message, variant: "destructive" });
         }
-
-        const application: JobApplication = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          userId: currentUser.id,
-          jobId: job.id,
-          job: job,
-          resume: resumeBase64,
-          coverLetter: coverLetterText,
-          status: 'submitted',
-          appliedAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString()
-        };
-        
-        newApplications.push(application);
       }
-
-      const updatedApplications = [...applications, ...newApplications];
-      setApplications(updatedApplications);
-      localStorage.setItem('jobApplications', JSON.stringify(updatedApplications));
-      
-      const userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
-      userStats.totalApplications = (userStats.totalApplications || 0) + newApplications.length;
-      userStats.applicationsThisWeek = (userStats.applicationsThisWeek || 0) + newApplications.length;
-      localStorage.setItem('userStats', JSON.stringify(userStats));
-
-      toast({
-        title: "Applications submitted!",
-        description: `Successfully applied to ${newApplications.length} job(s).`,
-      });
-
+      if (appliedCount) {
+        toast({
+          title: "Applications submitted!",
+          description: `Successfully applied to ${appliedCount} job(s).`,
+        });
+      }
       return true;
-    } catch (error) {
+    } catch {
       toast({
         title: "Application failed",
-        description: "There was an error submitting your application.",
-        variant: "destructive"
+        description: "There was an error submitting your application via Supabase.",
+        variant: "destructive",
       });
       return false;
     }

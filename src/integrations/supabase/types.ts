@@ -9,7 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      interview_sessions: {
+        Row: {
+          answers: Json | null
+          created_at: string | null
+          ended_at: string | null
+          feedback: Json | null
+          id: string
+          questions: Json | null
+          started_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          created_at?: string | null
+          ended_at?: string | null
+          feedback?: Json | null
+          id?: string
+          questions?: Json | null
+          started_at?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          created_at?: string | null
+          ended_at?: string | null
+          feedback?: Json | null
+          id?: string
+          questions?: Json | null
+          started_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_applications: {
+        Row: {
+          applied_at: string | null
+          company: string | null
+          cover_letter: string | null
+          id: string
+          job_data: Json | null
+          job_title: string | null
+          resume_url: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          company?: string | null
+          cover_letter?: string | null
+          id?: string
+          job_data?: Json | null
+          job_title?: string | null
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          company?: string | null
+          cover_letter?: string | null
+          id?: string
+          job_data?: Json | null
+          job_title?: string | null
+          resume_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_progress: {
+        Row: {
+          created_at: string | null
+          id: string
+          streak: number | null
+          total_applications: number | null
+          total_interviews: number | null
+          updated_at: string | null
+          user_id: string
+          weekly_stats: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          streak?: number | null
+          total_applications?: number | null
+          total_interviews?: number | null
+          updated_at?: string | null
+          user_id: string
+          weekly_stats?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          streak?: number | null
+          total_applications?: number | null
+          total_interviews?: number | null
+          updated_at?: string | null
+          user_id?: string
+          weekly_stats?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
