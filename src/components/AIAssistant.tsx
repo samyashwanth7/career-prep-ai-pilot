@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,9 @@ import {
   Sparkles,
   User
 } from 'lucide-react';
+import ApiKeyModal from "./ApiKeyModal";
+import { askOpenAIChat } from "@/services/aiService";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -42,6 +44,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const { toast } = useToast();
+
+  const hasAPIKey = !!localStorage.getItem("openai_api_key");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,20 +105,53 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsTyping(true);
+
+    // AI: use OpenAI if API key is present, fallback to basic if not. 
+    if (hasAPIKey) {
+      try {
+        const convContext = [
+          { role: "system", content: "You are an expert AI career assistant, give friendly, practical, and professional advice." + (context ? ` The user is currently on the ${context} page.` : "") },
+          ...messages.slice(-8).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
+          { role: "user", content: inputText }
+        ];
+        const aiReply = await askOpenAIChat(convContext as any);
+        const aiResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: aiReply,
+          sender: 'ai',
+          timestamp: new Date(),
+          type: 'insight'
+        };
+        setMessages(prev => [...prev, aiResponse]);
+      } catch (err: any) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text: "Sorry, something went wrong talking to OpenAI. Please check your API key or network connection.",
+            sender: "ai",
+            timestamp: new Date()
+          }
+        ]);
+        toast({ title: "OpenAI Error", description: err.message || String(err), variant: "destructive" });
+      } finally {
+        setIsTyping(false);
+      }
+      return;
+    }
     
-    // Simulate AI thinking time
+    // fallback: previous static response
     setTimeout(() => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateAIResponse(inputText),
+        text: "AI is not configured. Please add your OpenAI API key for smarter assistance.",
         sender: 'ai',
         timestamp: new Date(),
         type: 'insight'
       };
-      
       setMessages(prev => [...prev, aiResponse]);
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }, 700);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -131,12 +170,15 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg z-50"
-      >
-        <Bot className="w-6 h-6" />
-      </Button>
+      <div>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg z-50"
+        >
+          <Bot className="w-6 h-6" />
+        </Button>
+        <ApiKeyModal open={showKeyModal} onClose={() => setShowKeyModal(false)} />
+      </div>
     );
   }
 
@@ -154,7 +196,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
             <h3 className="text-white font-medium">AI Career Coach</h3>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-xs text-gray-400">Online</span>
+              <span className="text-xs text-gray-400">Online{!hasAPIKey && " (demo mode)"}</span>
             </div>
           </div>
         </div>
@@ -242,6 +284,24 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
             </div>
           )}
 
+          {/* Settings/footer: */}
+          <div className="flex p-2 border-t border-white/20 items-center justify-between gap-3">
+            <div>
+              {!hasAPIKey ? (
+                <Button variant="outline" size="sm" className="text-xs border-cyan-400 bg-cyan-400/10 text-cyan-300" onClick={() => setShowKeyModal(true)}>
+                  Add OpenAI API Key
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" className="text-xs text-blue-400" onClick={() => setShowKeyModal(true)}>
+                  Manage API Key
+                </Button>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              All processing is local — API key never leaves your browser.
+            </div>
+          </div>
+          <ApiKeyModal open={showKeyModal} onClose={() => setShowKeyModal(false)} onSave={() => {}} />
           {/* Input */}
           <div className="p-4 border-t border-white/20">
             <div className="flex space-x-2">
@@ -252,10 +312,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
                 placeholder="Ask me anything about your career..."
                 className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm resize-none"
                 rows={1}
+                disabled={isTyping}
               />
               <Button
                 onClick={sendMessage}
-                disabled={!inputText.trim()}
+                disabled={!inputText.trim() || isTyping}
                 className="bg-purple-500 hover:bg-purple-600"
               >
                 <Send className="w-4 h-4" />
