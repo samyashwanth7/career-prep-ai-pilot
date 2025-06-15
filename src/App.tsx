@@ -17,6 +17,7 @@ import ResumeAnalyzer from "./pages/ResumeAnalyzer";
 import CompanyPractice from "./pages/CompanyPractice";
 import BulkApplications from "./pages/BulkApplications";
 import NotFound from "./pages/NotFound";
+import Layout from "@/components/layout/Layout";
 
 const queryClient = new QueryClient();
 
@@ -27,19 +28,90 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route
+            path="/"
+            element={
+              <Layout>
+                <Index />
+              </Layout>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/demo" element={<Demo />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/interview" element={<Interview />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/career-roadmap" element={<CareerRoadmap />} />
-          <Route path="/resume-analyzer" element={<ResumeAnalyzer />} />
-          <Route path="/company-practice" element={<CompanyPractice />} />
-          <Route path="/bulk-applications" element={<BulkApplications />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Pages after login use the professional Layout */}
+          <Route
+            path="/dashboard"
+            element={
+              <Layout>
+                <Dashboard />
+              </Layout>
+            }
+          />
+          <Route
+            path="/demo"
+            element={
+              <Layout>
+                <Demo />
+              </Layout>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <Layout>
+                <Jobs />
+              </Layout>
+            }
+          />
+          <Route
+            path="/interview"
+            element={
+              <Layout>
+                <Interview />
+              </Layout>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <Layout>
+                <Analytics />
+              </Layout>
+            }
+          />
+          <Route
+            path="/career-roadmap"
+            element={
+              <Layout>
+                <CareerRoadmap />
+              </Layout>
+            }
+          />
+          <Route
+            path="/resume-analyzer"
+            element={
+              <Layout>
+                <ResumeAnalyzer />
+              </Layout>
+            }
+          />
+          <Route
+            path="/company-practice"
+            element={
+              <Layout>
+                <CompanyPractice />
+              </Layout>
+            }
+          />
+          <Route
+            path="/bulk-applications"
+            element={
+              <Layout>
+                <BulkApplications />
+              </Layout>
+            }
+          />
+          {/* ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
