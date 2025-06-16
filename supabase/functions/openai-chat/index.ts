@@ -17,6 +17,8 @@ serve(async (req) => {
   try {
     const { messages, model, temperature, max_tokens } = await req.json();
 
+    console.log(`OpenAI request with ${messages?.length || 0} messages`);
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -24,7 +26,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: model ?? "gpt-4o",
+        model: model ?? "gpt-4.1-2025-04-14",
         messages,
         temperature: temperature ?? 0.6,
         max_tokens: max_tokens ?? 250,
@@ -32,11 +34,19 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('OpenAI API Error:', data);
+      throw new Error(data.error?.message || 'OpenAI API request failed');
+    }
 
+    console.log('OpenAI response received successfully');
+    
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error('Edge Function Error:', e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

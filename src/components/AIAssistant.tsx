@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
   Sparkles,
   User
 } from 'lucide-react';
-import ApiKeyModal from "./ApiKeyModal";
 import { askOpenAIChat } from "@/services/aiService";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -44,10 +44,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showKeyModal, setShowKeyModal] = useState(false);
   const { toast } = useToast();
-
-  const hasAPIKey = !!localStorage.getItem("openai_api_key");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,41 +53,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const generateAIResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Context-aware responses
-    if (context === 'interview' && (lowerMessage.includes('nervous') || lowerMessage.includes('anxiety'))) {
-      return "I understand interview nerves! Here are some quick tips: 1) Practice the STAR method for behavioral questions, 2) Take deep breaths and speak slowly, 3) Remember that they want you to succeed. Would you like me to help you practice some common questions?";
-    }
-    
-    if (context === 'analytics' && lowerMessage.includes('improve')) {
-      return "Based on your analytics, I can see areas for improvement! Focus on: 1) Practicing more technical questions if your technical scores are low, 2) Working on confidence through mock interviews, 3) Recording yourself to improve speech clarity. Which area would you like to focus on first?";
-    }
-    
-    if (lowerMessage.includes('resume')) {
-      return "For resume optimization, I recommend: 1) Using action verbs and quantifying achievements, 2) Tailoring keywords to job descriptions, 3) Keeping it concise (1-2 pages). Would you like me to analyze your current resume or help with specific sections?";
-    }
-    
-    if (lowerMessage.includes('job') || lowerMessage.includes('career')) {
-      return "I can help with career guidance! Are you looking for: 1) Job search strategies, 2) Career path recommendations, 3) Skill development suggestions, or 4) Industry insights? Let me know what specific area interests you most.";
-    }
-    
-    if (lowerMessage.includes('question') || lowerMessage.includes('practice')) {
-      return "Great! I can help you practice interview questions. What type would you like to focus on? 1) Behavioral questions (STAR method), 2) Technical questions for your field, 3) Company-specific questions, or 4) General questions about yourself?";
-    }
-    
-    // Default responses
-    const responses = [
-      "That's a great question! Based on current industry trends, I'd recommend focusing on both technical skills and soft skills development.",
-      "I can help you with that! Let me break this down into actionable steps you can take right away.",
-      "Interesting point! From my analysis of successful candidates, here's what I've observed...",
-      "That's exactly the kind of strategic thinking that employers love to see! Here's how you can develop this further..."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -106,52 +68,45 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
     setInputText('');
     setIsTyping(true);
 
-    // AI: use OpenAI if API key is present, fallback to basic if not. 
-    if (hasAPIKey) {
-      try {
-        const convContext = [
-          { role: "system", content: "You are an expert AI career assistant, give friendly, practical, and professional advice." + (context ? ` The user is currently on the ${context} page.` : "") },
-          ...messages.slice(-8).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
-          { role: "user", content: inputText }
-        ];
-        const aiReply = await askOpenAIChat(convContext as any);
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: aiReply,
-          sender: 'ai',
-          timestamp: new Date(),
-          type: 'insight'
-        };
-        setMessages(prev => [...prev, aiResponse]);
-      } catch (err: any) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            text: "Sorry, something went wrong talking to OpenAI. Please check your API key or network connection.",
-            sender: "ai",
-            timestamp: new Date()
-          }
-        ]);
-        toast({ title: "OpenAI Error", description: err.message || String(err), variant: "destructive" });
-      } finally {
-        setIsTyping(false);
-      }
-      return;
-    }
-    
-    // fallback: previous static response
-    setTimeout(() => {
+    try {
+      const convContext = [
+        { 
+          role: "system", 
+          content: `You are an expert AI career assistant. Give friendly, practical, and professional advice. Keep responses concise and actionable.${context ? ` The user is currently on the ${context} page.` : ""}`
+        },
+        ...messages.slice(-8).map(m => ({ 
+          role: m.sender === 'user' ? 'user' : 'assistant', 
+          content: m.text 
+        })),
+        { role: "user", content: inputText }
+      ];
+
+      const aiReply = await askOpenAIChat(convContext as any);
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: "AI is not configured. Please add your OpenAI API key for smarter assistance.",
+        text: aiReply,
         sender: 'ai',
         timestamp: new Date(),
         type: 'insight'
       };
       setMessages(prev => [...prev, aiResponse]);
+    } catch (err: any) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm having trouble connecting to my AI service right now. Please try again in a moment.",
+        sender: "ai",
+        timestamp: new Date(),
+        type: 'suggestion'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      toast({ 
+        title: "AI Service Error", 
+        description: "Connection issue with AI service. Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
       setIsTyping(false);
-    }, 700);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -170,15 +125,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
 
   if (!isOpen) {
     return (
-      <div>
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg z-50"
-        >
-          <Bot className="w-6 h-6" />
-        </Button>
-        <ApiKeyModal open={showKeyModal} onClose={() => setShowKeyModal(false)} />
-      </div>
+      <Button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 shadow-lg z-50"
+      >
+        <Bot className="w-6 h-6" />
+      </Button>
     );
   }
 
@@ -196,7 +148,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
             <h3 className="text-white font-medium">AI Career Coach</h3>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-xs text-gray-400">Online{!hasAPIKey && " (demo mode)"}</span>
+              <span className="text-xs text-gray-400">Online</span>
             </div>
           </div>
         </div>
@@ -284,24 +236,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
             </div>
           )}
 
-          {/* Settings/footer: */}
-          <div className="flex p-2 border-t border-white/20 items-center justify-between gap-3">
-            <div>
-              {!hasAPIKey ? (
-                <Button variant="outline" size="sm" className="text-xs border-cyan-400 bg-cyan-400/10 text-cyan-300" onClick={() => setShowKeyModal(true)}>
-                  Add OpenAI API Key
-                </Button>
-              ) : (
-                <Button variant="ghost" size="sm" className="text-xs text-blue-400" onClick={() => setShowKeyModal(true)}>
-                  Manage API Key
-                </Button>
-              )}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              All processing is local — API key never leaves your browser.
-            </div>
-          </div>
-          <ApiKeyModal open={showKeyModal} onClose={() => setShowKeyModal(false)} onSave={() => {}} />
           {/* Input */}
           <div className="p-4 border-t border-white/20">
             <div className="flex space-x-2">
