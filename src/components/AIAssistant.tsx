@@ -35,7 +35,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Hi! I'm your AI Career Coach. I can help you with interview preparation, resume optimization, career guidance, and answering questions about your progress. ${context ? `I see you're currently on the ${context} page. ` : ''}How can I assist you today?`,
+      text: `Hi! I'm your Career Prep AI. I can help you with interview preparation, resume optimization, career guidance, and answering questions about your progress. ${context ? `I see you're currently on the ${context} page. ` : ''}How can I assist you today?`,
       sender: 'ai',
       timestamp: new Date(),
       type: 'question'
@@ -145,7 +145,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ context, suggestions = [] }) 
             <Bot className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h3 className="text-white font-medium">AI Career Coach</h3>
+            <h3 className="text-white font-medium">Career Prep AI</h3>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full"></div>
               <span className="text-xs text-gray-400">Online</span>
