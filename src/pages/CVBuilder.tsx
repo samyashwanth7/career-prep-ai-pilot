@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,12 +22,15 @@ import {
   Briefcase,
   GraduationCap,
   Award,
-  Code
+  Code,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModernTemplate from '@/components/cv-builder/ModernTemplate';
 import ClassicTemplate from '@/components/cv-builder/ClassicTemplate';
 import MinimalTemplate from '@/components/cv-builder/MinimalTemplate';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface PersonalInfo {
   fullName: string;
@@ -87,6 +89,7 @@ const CVBuilder = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('modern');
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [showPreview, setShowPreview] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const [cvData, setCVData] = useState<CVData>({
     personalInfo: {
@@ -238,13 +241,106 @@ const CVBuilder = () => {
   };
 
   const handleDownload = async () => {
-    if (typeof window !== 'undefined' && window.print) {
-      window.print();
+    if (!printRef.current) {
+      toast({
+        title: "Error",
+        description: "CV preview not found. Please try again.",
+        variant: "destructive"
+      });
+      return;
     }
-    toast({
-      title: "CV Downloaded!",
-      description: "Your ATS-friendly CV has been generated successfully."
-    });
+
+    setIsGeneratingPDF(true);
+    
+    try {
+      // Create a temporary container for PDF generation
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '210mm'; // A4 width
+      tempContainer.style.minHeight = '297mm'; // A4 height
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.padding = '0';
+      tempContainer.style.margin = '0';
+      document.body.appendChild(tempContainer);
+
+      // Clone the CV content
+      const cvElement = printRef.current.cloneNode(true) as HTMLElement;
+      cvElement.style.width = '100%';
+      cvElement.style.maxWidth = 'none';
+      cvElement.style.margin = '0';
+      cvElement.style.padding = '20mm';
+      cvElement.style.boxSizing = 'border-box';
+      cvElement.style.fontSize = '12px';
+      cvElement.style.lineHeight = '1.4';
+      
+      tempContainer.appendChild(cvElement);
+
+      // Wait for fonts and styles to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Generate canvas from the temporary container
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: tempContainer.offsetWidth,
+        height: tempContainer.offsetHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all styles are properly applied in the cloned document
+          const clonedElement = clonedDoc.querySelector('div') as HTMLElement;
+          if (clonedElement) {
+            clonedElement.style.fontFamily = 'Arial, sans-serif';
+          }
+        }
+      });
+
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // If content is longer than one page, we might need to handle pagination
+      if (imgHeight > 297) {
+        // For now, we'll scale it to fit one page
+        const scaledHeight = 297;
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, scaledHeight);
+      } else {
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+      }
+
+      // Generate filename based on user's name
+      const fileName = cvData.personalInfo.fullName 
+        ? `${cvData.personalInfo.fullName.replace(/\s+/g, '_')}_CV.pdf`
+        : 'My_CV.pdf';
+
+      pdf.save(fileName);
+
+      toast({
+        title: "CV Downloaded Successfully!",
+        description: "Your ATS-friendly CV has been generated and saved as PDF with all formatting preserved."
+      });
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "There was an error generating your CV. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const SelectedTemplateComponent = templates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
@@ -276,9 +372,22 @@ const CVBuilder = () => {
               <Eye className="w-4 h-4 mr-2" />
               {showPreview ? 'Hide Preview' : 'Preview'}
             </Button>
-            <Button onClick={handleDownload} className="bg-blue-600 hover:bg-blue-700">
-              <Download className="w-4 h-4 mr-2" />
-              Download CV
+            <Button 
+              onClick={handleDownload} 
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </>
+              )}
             </Button>
           </div>
         </div>
