@@ -16,6 +16,7 @@ import CareerRoadmap from "./pages/CareerRoadmap";
 import ResumeAnalyzer from "./pages/ResumeAnalyzer";
 import CompanyPractice from "./pages/CompanyPractice";
 import BulkApplications from "./pages/BulkApplications";
+import CVBuilder from "./pages/CVBuilder";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/layout/Layout";
 
@@ -52,6 +53,14 @@ const App = () => (
             element={
               <Layout>
                 <Demo />
+              </Layout>
+            }
+          />
+          <Route
+            path="/cv-builder"
+            element={
+              <Layout>
+                <CVBuilder />
               </Layout>
             }
           />
