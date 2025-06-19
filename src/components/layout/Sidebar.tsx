@@ -9,10 +9,12 @@ import {
   File,
   Circle,
   SunMedium,
+  PenTool,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/dashboard", icon: <Home /> },
+  { label: "CV Builder", path: "/cv-builder", icon: <PenTool /> },
   { label: "Jobs", path: "/jobs", icon: <Briefcase /> },
   { label: "Analytics", path: "/analytics", icon: <BarChart2 /> },
   { label: "Profile", path: "/profile", icon: <User /> },
