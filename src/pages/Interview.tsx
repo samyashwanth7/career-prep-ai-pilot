@@ -1,15 +1,13 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy, Lightbulb, Sparkles, History } from 'lucide-react';
+import { ArrowLeft, History } from 'lucide-react';
 import AIAssistant from '@/components/AIAssistant';
-import QuestionCategories, { categories } from '@/components/interview/QuestionCategories';
+import InterviewSetup from '@/components/interview/InterviewSetup';
+import InterviewSession from '@/components/interview/InterviewSession';
 import InterviewFeedback from '@/components/interview/InterviewFeedback';
 import InterviewHistory from '@/components/interview/InterviewHistory';
+import InterviewComplete from '@/components/interview/InterviewComplete';
 
 interface AIPersonality {
   id: string;
@@ -54,7 +52,6 @@ const Interview = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedPersonality, setSelectedPersonality] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(120);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -418,31 +415,13 @@ const Interview = () => {
   if (sessionComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-white mb-4">Interview Complete!</h2>
-            <p className="text-gray-300 mb-6">
-              You completed {questions.length} questions with {getPersonalityById(selectedPersonality)?.name}
-            </p>
-            
-            <div className="flex gap-4 justify-center">
-              <Button
-                onClick={() => setCurrentView('history')}
-                className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
-              >
-                View History
-              </Button>
-              <Button
-                onClick={() => window.location.reload()}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                Practice Again
-              </Button>
-            </div>
-          </Card>
-        </div>
+        <InterviewComplete
+          questionsLength={questions.length}
+          selectedPersonality={selectedPersonality}
+          onViewHistory={() => setCurrentView('history')}
+          onPracticeAgain={() => window.location.reload()}
+          getPersonalityById={getPersonalityById}
+        />
         <AIAssistant context="interview-complete" />
       </div>
     );
@@ -482,170 +461,30 @@ const Interview = () => {
 
       <main className="p-6 max-w-4xl mx-auto">
         {currentView === 'setup' && (
-          <div className="space-y-8">
-            {/* Question Category Selection */}
-            <QuestionCategories
-              selectedCategory={selectedCategory}
-              onCategorySelect={setSelectedCategory}
-            />
-
-            {selectedCategory && (
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
-                <h2 className="text-2xl font-bold text-white mb-6">Choose Your AI Interviewer</h2>
-                
-                <div className="grid md:grid-cols-2 gap-6 mb-8">
-                  {aiPersonalities.map(personality => (
-                    <button
-                      key={personality.id}
-                      onClick={() => setSelectedPersonality(personality.id)}
-                      className={`p-6 rounded-lg border-2 transition-all text-left ${
-                        selectedPersonality === personality.id
-                          ? 'border-purple-500 bg-purple-500/20'
-                          : 'border-white/20 bg-white/5 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${personality.color} flex items-center justify-center text-white mb-4`}>
-                        {personality.icon}
-                      </div>
-                      <h3 className="text-white font-semibold text-lg mb-2">{personality.name}</h3>
-                      <p className="text-gray-300 text-sm mb-3">{personality.description}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {personality.traits.map(trait => (
-                          <Badge key={trait} variant="outline" className="border-gray-500 text-gray-300 text-xs">
-                            {trait}
-                          </Badge>
-                        ))}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <Button
-                  onClick={startInterview}
-                  disabled={!selectedCategory || !selectedPersonality}
-                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
-                >
-                  Start AI Interview
-                </Button>
-              </Card>
-            )}
-          </div>
+          <InterviewSetup
+            selectedCategory={selectedCategory}
+            selectedPersonality={selectedPersonality}
+            onCategorySelect={setSelectedCategory}
+            onPersonalitySelect={setSelectedPersonality}
+            onStartInterview={startInterview}
+          />
         )}
 
         {currentView === 'interview' && (
-          <div className="space-y-6">
-            {/* Progress and Live Metrics */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      Question {currentQuestionIndex + 1} of {questions.length}
-                    </h3>
-                    <p className="text-gray-400">
-                      {selectedCategory} • {getPersonalityById(selectedPersonality)?.name}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white">{formatTime(timeLeft)}</div>
-                    <div className="text-gray-400">Time remaining</div>
-                  </div>
-                </div>
-                <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-4" />
-                <Progress value={(timeLeft / 120) * 100} className="h-2" />
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Brain className="w-4 h-4 text-cyan-400" />
-                  <h4 className="text-white font-semibold">Live AI Metrics</h4>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-300 text-sm">Confidence</span>
-                      <span className="text-cyan-400 font-semibold">{Math.round(liveConfidence)}%</span>
-                    </div>
-                    <Progress value={liveConfidence} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-300 text-sm">Eye Contact</span>
-                      <span className="text-green-400 font-semibold">{Math.round(eyeContactScore)}%</span>
-                    </div>
-                    <Progress value={eyeContactScore} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-300 text-sm">Speech Clarity</span>
-                      <span className="text-yellow-400 font-semibold">{Math.round(speechClarityScore)}%</span>
-                    </div>
-                    <Progress value={speechClarityScore} className="h-2" />
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Current Question */}
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
-              <div className="mb-6">
-                <Badge className="mb-4 bg-blue-500/20 text-blue-400">
-                  {questions[currentQuestionIndex]?.type}
-                </Badge>
-                <h2 className="text-xl font-semibold text-white mb-4">
-                  {questions[currentQuestionIndex]?.text}
-                </h2>
-                {questions[currentQuestionIndex]?.personalityContext && (
-                  <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4 mb-4">
-                    <p className="text-purple-200 text-sm">
-                      <strong>{getPersonalityById(selectedPersonality)?.name}:</strong> {questions[currentQuestionIndex]?.personalityContext}
-                    </p>
-                  </div>
-                )}
-                <p className="text-gray-400">
-                  Take your time to think, then click the microphone to start recording your response.
-                </p>
-              </div>
-
-              {/* Recording Controls */}
-              <div className="text-center">
-                <div className="mb-6">
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`w-20 h-20 rounded-full border-4 transition-all ${
-                      isRecording
-                        ? 'border-red-500 bg-red-500/20 animate-pulse'
-                        : 'border-purple-500 bg-purple-500/20 hover:bg-purple-500/30'
-                    }`}
-                  >
-                    {isRecording ? (
-                      <MicOff className="w-8 h-8 text-red-400 mx-auto" />
-                    ) : (
-                      <Mic className="w-8 h-8 text-purple-400 mx-auto" />
-                    )}
-                  </button>
-                </div>
-                
-                <div className="text-white">
-                  {isRecording ? 'Recording... Click to stop' : 'Click to start recording'}
-                </div>
-                
-                {isRecording && (
-                  <div className="mt-4 flex justify-center">
-                    <div className="flex space-x-1">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <div
-                          key={i}
-                          className="w-2 h-8 bg-purple-500 rounded animate-pulse"
-                          style={{ animationDelay: `${i * 0.1}s` }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
+          <InterviewSession
+            currentQuestionIndex={currentQuestionIndex}
+            questions={questions}
+            timeLeft={timeLeft}
+            isRecording={isRecording}
+            liveConfidence={liveConfidence}
+            eyeContactScore={eyeContactScore}
+            speechClarityScore={speechClarityScore}
+            selectedCategory={selectedCategory}
+            selectedPersonality={selectedPersonality}
+            onStartRecording={startRecording}
+            onStopRecording={stopRecording}
+            getPersonalityById={getPersonalityById}
+          />
         )}
 
         {currentView === 'feedback' && currentFeedback && (
