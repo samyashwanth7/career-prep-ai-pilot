@@ -1,11 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy, Lightbulb, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, Play, Pause, RotateCcw, CheckCircle, User, Brain, Briefcase, Trophy, Lightbulb, Sparkles, History } from 'lucide-react';
 import AIAssistant from '@/components/AIAssistant';
+import QuestionCategories, { categories } from '@/components/interview/QuestionCategories';
+import InterviewFeedback from '@/components/interview/InterviewFeedback';
+import InterviewHistory from '@/components/interview/InterviewHistory';
 
 interface AIPersonality {
   id: string;
@@ -28,45 +32,40 @@ interface Question {
 
 interface InterviewSession {
   id: string;
-  company: string;
-  type: string;
-  personalityId: string;
-  questions: Question[];
-  responses: {
-    questionId: string;
-    audioBlob: string;
-    duration: number;
-    score: number;
-    confidence: number;
-    eyeContact: number;
-    speechClarity: number;
-  }[];
-  startTime: Date;
-  endTime?: Date;
+  category: string;
+  questionText: string;
+  transcription: string;
   overallScore: number;
-  confidenceScore: number;
-  communicationScore: number;
+  duration: number;
+  date: string;
+  feedback: {
+    specificity: number;
+    relevance: number;
+    impact: number;
+    structure: number;
+    suggestions: string[];
+  };
 }
 
 const Interview = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedType, setSelectedType] = useState('');
+  const [currentView, setCurrentView] = useState<'setup' | 'interview' | 'feedback' | 'history'>('setup');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedPersonality, setSelectedPersonality] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(120);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [recordedResponses, setRecordedResponses] = useState<any[]>([]);
+  const [currentTranscription, setCurrentTranscription] = useState('');
+  const [sessionComplete, setSessionComplete] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const [sessionComplete, setSessionComplete] = useState(false);
   const [liveConfidence, setLiveConfidence] = useState(75);
   const [eyeContactScore, setEyeContactScore] = useState(80);
   const [speechClarityScore, setSpeechClarityScore] = useState(85);
+  const [currentFeedback, setCurrentFeedback] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -109,76 +108,92 @@ const Interview = () => {
     }
   ];
 
-  // Add AI suggestions function
-  const getAIPersonalitySuggestion = () => {
-    const userStats = JSON.parse(localStorage.getItem('userStats') || '{}');
-    const confidenceAvg = userStats.confidenceAvg || 75;
-    const averageScore = userStats.averageScore || 70;
-    
-    if (confidenceAvg < 70) {
-      return {
-        suggested: 'friendly',
-        reason: 'Recommended for building confidence and reducing interview anxiety'
-      };
-    } else if (averageScore > 85) {
-      return {
-        suggested: 'executive',
-        reason: 'You\'re ready for senior-level challenging scenarios'
-      };
-    } else if (selectedType === 'technical') {
-      return {
-        suggested: 'technical',
-        reason: 'Perfect match for technical interview preparation'
-      };
-    } else {
-      return {
-        suggested: 'professional',
-        reason: 'Well-rounded approach suitable for most interviews'
-      };
-    }
-  };
+  // Generate questions based on selected category
+  const generateQuestionsForCategory = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return [];
 
-  // Add AI coaching tips
-  const getAICoachingTips = () => {
-    const tips = [
-      {
-        icon: <Brain className="w-4 h-4" />,
-        title: "Structure Your Response",
-        description: "Use the STAR method: Situation, Task, Action, Result"
-      },
-      {
-        icon: <Lightbulb className="w-4 h-4" />,
-        title: "Be Specific",
-        description: "Include concrete numbers and measurable outcomes"
-      },
-      {
-        icon: <Sparkles className="w-4 h-4" />,
-        title: "Show Growth",
-        description: "Explain what you learned and how you'd apply it"
-      }
-    ];
-    
-    if (selectedType === 'technical') {
-      return [
+    // Sample questions for each category - in a real app, these would come from a database
+    const questionBank = {
+      behavioral: [
         {
-          icon: <Brain className="w-4 h-4" />,
-          title: "Think Out Loud",
-          description: "Verbalize your problem-solving process"
+          id: '1',
+          text: 'Tell me about a time you overcame a significant challenge at work.',
+          type: 'behavioral' as const,
+          timeLimit: 120,
+          difficulty: 'medium' as const,
+          personalityContext: 'Focus on the specific actions you took and the results you achieved.'
         },
         {
-          icon: <Lightbulb className="w-4 h-4" />,
-          title: "Consider Edge Cases",
-          description: "Discuss potential issues and optimizations"
-        },
-        {
-          icon: <Sparkles className="w-4 h-4" />,
-          title: "Ask Clarifying Questions",
-          description: "Ensure you understand the requirements fully"
+          id: '2',
+          text: 'Describe a situation where you had to work with a difficult team member.',
+          type: 'behavioral' as const,
+          timeLimit: 120,
+          difficulty: 'medium' as const,
+          personalityContext: 'Show me your interpersonal and conflict resolution skills.'
         }
-      ];
-    }
-    
-    return tips;
+      ],
+      technical: [
+        {
+          id: '3',
+          text: 'Explain the difference between SQL and NoSQL databases and when you would use each.',
+          type: 'technical' as const,
+          timeLimit: 120,
+          difficulty: 'hard' as const,
+          personalityContext: 'Walk me through your technical reasoning and provide specific examples.'
+        },
+        {
+          id: '4',
+          text: 'How would you optimize a slow-performing web application?',
+          type: 'technical' as const,
+          timeLimit: 120,
+          difficulty: 'hard' as const,
+          personalityContext: 'Consider both frontend and backend optimization strategies.'
+        }
+      ],
+      situational: [
+        {
+          id: '5',
+          text: 'How would you handle a tight deadline with limited resources?',
+          type: 'situational' as const,
+          timeLimit: 120,
+          difficulty: 'medium' as const,
+          personalityContext: 'Show me your prioritization and problem-solving approach.'
+        }
+      ],
+      communication: [
+        {
+          id: '6',
+          text: 'How do you explain complex technical concepts to non-technical stakeholders?',
+          type: 'situational' as const,
+          timeLimit: 120,
+          difficulty: 'easy' as const,
+          personalityContext: 'Demonstrate your communication adaptation skills.'
+        }
+      ],
+      'problem-solving': [
+        {
+          id: '7',
+          text: 'Walk me through your process for approaching an unfamiliar technical problem.',
+          type: 'technical' as const,
+          timeLimit: 120,
+          difficulty: 'hard' as const,
+          personalityContext: 'Show me your analytical thinking and methodology.'
+        }
+      ],
+      'goals-motivation': [
+        {
+          id: '8',
+          text: 'Where do you see yourself in 5 years and how does this role fit into your career goals?',
+          type: 'behavioral' as const,
+          timeLimit: 120,
+          difficulty: 'easy' as const,
+          personalityContext: 'Help me understand your career vision and motivation.'
+        }
+      ]
+    };
+
+    return questionBank[categoryId as keyof typeof questionBank] || [];
   };
 
   useEffect(() => {
@@ -202,91 +217,12 @@ const Interview = () => {
     }
   }, [isRecording]);
 
-  const companyQuestions = {
-    google: {
-      technical: [
-        { 
-          id: '1', 
-          text: 'Implement an LRU Cache with O(1) get and put operations.', 
-          type: 'technical' as const, 
-          timeLimit: 120, 
-          difficulty: 'hard' as const,
-          personalityContext: 'Focus on your approach to system design and optimization.'
-        },
-        { 
-          id: '2', 
-          text: 'Design a system to handle 1 billion daily active users for a social media platform.', 
-          type: 'technical' as const, 
-          timeLimit: 120, 
-          difficulty: 'hard' as const,
-          personalityContext: 'Walk me through your scalability considerations.'
-        }
-      ],
-      behavioral: [
-        { 
-          id: '4', 
-          text: 'Tell me about a time you had to influence someone without having direct authority over them.', 
-          type: 'behavioral' as const, 
-          timeLimit: 120, 
-          difficulty: 'medium' as const,
-          personalityContext: 'I\'m interested in your leadership and influence strategies.'
-        }
-      ]
-    },
-    meta: {
-      technical: [
-        { 
-          id: '6', 
-          text: 'Design the architecture for a real-time chat system like WhatsApp.', 
-          type: 'technical' as const, 
-          timeLimit: 120, 
-          difficulty: 'hard' as const,
-          personalityContext: 'Consider the real-time aspects and user experience.'
-        }
-      ],
-      behavioral: [
-        { 
-          id: '8', 
-          text: 'Give me an example of when you moved fast and broke things. How did you handle it?', 
-          type: 'behavioral' as const, 
-          timeLimit: 120, 
-          difficulty: 'medium' as const,
-          personalityContext: 'Show me how you balance speed with quality.'
-        }
-      ]
-    },
-    amazon: {
-      technical: [
-        { 
-          id: '10', 
-          text: 'Design a distributed storage system like S3.', 
-          type: 'technical' as const, 
-          timeLimit: 120, 
-          difficulty: 'hard' as const,
-          personalityContext: 'Focus on reliability and customer obsession in your design.'
-        }
-      ],
-      behavioral: [
-        { 
-          id: '12', 
-          text: 'Tell me about a time you had to make a decision with incomplete information (Bias for Action).', 
-          type: 'behavioral' as const, 
-          timeLimit: 120, 
-          difficulty: 'medium' as const,
-          personalityContext: 'Demonstrate how you embody our leadership principles.'
-        }
-      ]
-    }
-  };
-
   const startInterview = () => {
-    if (!selectedCompany || !selectedType || !selectedPersonality) return;
+    if (!selectedCategory || !selectedPersonality) return;
     
-    const companyQuestionSet = companyQuestions[selectedCompany as keyof typeof companyQuestions];
-    const typeQuestions = companyQuestionSet[selectedType as keyof typeof companyQuestionSet] || [];
-    
-    setQuestions(typeQuestions);
-    setSessionStarted(true);
+    const categoryQuestions = generateQuestionsForCategory(selectedCategory);
+    setQuestions(categoryQuestions);
+    setCurrentView('interview');
     setTimeLeft(120);
   };
 
@@ -356,77 +292,109 @@ const Interview = () => {
     }
   };
 
+  const generateMockTranscription = () => {
+    const mockTranscriptions = [
+      "In my previous role as a software engineer, I faced a challenging situation where our main database server went down during peak hours. The situation required immediate action as it was affecting thousands of users. My task was to restore service while minimizing data loss. I quickly assembled a team, implemented our disaster recovery protocol, and coordinated with the infrastructure team to switch to our backup systems. As a result, we restored service within 45 minutes and prevented any data loss, which was much faster than our target recovery time of 2 hours.",
+      "I believe the key difference between SQL and NoSQL databases lies in their structure and use cases. SQL databases like PostgreSQL use a structured, tabular format with predefined schemas, making them ideal for complex relationships and ACID transactions. NoSQL databases like MongoDB offer more flexibility with document-based storage, making them better for rapid scaling and handling unstructured data. In my experience, I've used SQL for financial applications where data integrity is crucial, and NoSQL for content management systems where scalability and flexibility are priorities.",
+      "When facing tight deadlines with limited resources, I start by clearly defining the scope and identifying the must-have versus nice-to-have features. I prioritize tasks based on impact and effort required, communicate transparently with stakeholders about what's realistic, and look for opportunities to leverage existing solutions or automate repetitive tasks. In one project, I had to deliver a client portal in half the expected time, so I used a pre-built framework and focused on core functionality first, delivering a working solution on time while planning phase-two enhancements."
+    ];
+    return mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+  };
+
+  const generateMockFeedback = (questionType: string, transcription: string) => {
+    const baseMetrics = {
+      specificity: Math.floor(Math.random() * 30) + 65,
+      relevance: Math.floor(Math.random() * 25) + 70,
+      impact: Math.floor(Math.random() * 35) + 60,
+      structure: Math.floor(Math.random() * 25) + 70,
+      starMethod: {
+        situation: transcription.toLowerCase().includes('situation') || transcription.toLowerCase().includes('faced'),
+        task: transcription.toLowerCase().includes('task') || transcription.toLowerCase().includes('required'),
+        action: transcription.toLowerCase().includes('action') || transcription.toLowerCase().includes('implemented'),
+        result: transcription.toLowerCase().includes('result') || transcription.toLowerCase().includes('achieved'),
+        score: 0
+      },
+      fluency: {
+        pauseCount: Math.floor(Math.random() * 5) + 1,
+        hesitations: Math.floor(Math.random() * 3) + 1,
+        overallFlow: 'Smooth' as 'Smooth' | 'Some hesitations' | 'Choppy'
+      },
+      overallScore: 0
+    };
+
+    // Calculate STAR method score
+    const starCount = Object.values(baseMetrics.starMethod).slice(0, 4).filter(Boolean).length;
+    baseMetrics.starMethod.score = (starCount / 4) * 100;
+
+    // Calculate overall score
+    baseMetrics.overallScore = Math.round(
+      (baseMetrics.specificity + baseMetrics.relevance + baseMetrics.impact + baseMetrics.structure) / 4
+    );
+
+    const suggestions = [
+      "Try to include more specific metrics and numbers to quantify your achievements.",
+      "Structure your response using the STAR method for better clarity.",
+      "Consider adding more details about the challenges you overcame.",
+      "Explain the long-term impact or lessons learned from this experience."
+    ];
+
+    return {
+      metrics: baseMetrics,
+      suggestions: suggestions.slice(0, Math.floor(Math.random() * 2) + 2)
+    };
+  };
+
   const saveCurrentResponse = async () => {
     if (audioChunks.length === 0) return;
     
-    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-    const base64Audio = await blobToBase64(audioBlob);
+    // Generate mock transcription and feedback
+    const transcription = generateMockTranscription();
+    const feedback = generateMockFeedback(questions[currentQuestionIndex].type, transcription);
     
-    const response = {
-      questionId: questions[currentQuestionIndex].id,
-      audioBlob: base64Audio,
+    setCurrentTranscription(transcription);
+    setCurrentFeedback({
+      questionText: questions[currentQuestionIndex].text,
+      transcription,
       duration: 120 - timeLeft,
-      score: Math.floor(Math.random() * 30) + 70,
-      confidence: liveConfidence,
-      eyeContact: eyeContactScore,
-      speechClarity: speechClarityScore
+      ...feedback,
+      questionType: questions[currentQuestionIndex].type
+    });
+
+    // Save to localStorage for history
+    const session: InterviewSession = {
+      id: Date.now().toString(),
+      category: selectedCategory,
+      questionText: questions[currentQuestionIndex].text,
+      transcription,
+      overallScore: feedback.metrics.overallScore,
+      duration: 120 - timeLeft,
+      date: new Date().toISOString(),
+      feedback: {
+        specificity: feedback.metrics.specificity,
+        relevance: feedback.metrics.relevance,
+        impact: feedback.metrics.impact,
+        structure: feedback.metrics.structure,
+        suggestions: feedback.suggestions
+      }
     };
+
+    const existingSessions = JSON.parse(localStorage.getItem(`interview_history_${currentUser.id}`) || '[]');
+    existingSessions.push(session);
+    localStorage.setItem(`interview_history_${currentUser.id}`, JSON.stringify(existingSessions));
     
-    setRecordedResponses(prev => [...prev, response]);
-    
+    setCurrentView('feedback');
+    setAudioChunks([]);
+  };
+
+  const nextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setTimeLeft(120);
-      setAudioChunks([]);
+      setCurrentView('interview');
+      setCurrentFeedback(null);
     } else {
-      completeSession();
+      setSessionComplete(true);
     }
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const completeSession = () => {
-    const session: InterviewSession = {
-      id: Date.now().toString(),
-      company: selectedCompany,
-      type: selectedType,
-      personalityId: selectedPersonality,
-      questions,
-      responses: recordedResponses,
-      startTime: new Date(),
-      endTime: new Date(),
-      overallScore: recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length,
-      confidenceScore: recordedResponses.reduce((acc, r) => acc + r.confidence, 0) / recordedResponses.length,
-      communicationScore: recordedResponses.reduce((acc, r) => acc + (r.eyeContact + r.speechClarity) / 2, 0) / recordedResponses.length
-    };
-    
-    const sessions = JSON.parse(localStorage.getItem('interviewSessions') || '[]');
-    sessions.push(session);
-    localStorage.setItem('interviewSessions', JSON.stringify(sessions));
-    
-    updateUserStats(session);
-    setSessionComplete(true);
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-  };
-
-  const updateUserStats = (session: InterviewSession) => {
-    const stats = JSON.parse(localStorage.getItem('userStats') || '{}');
-    stats.totalInterviews = (stats.totalInterviews || 0) + 1;
-    stats.averageScore = ((stats.averageScore || 0) + session.overallScore) / 2;
-    stats.lastSessionDate = new Date().toISOString();
-    stats.confidenceAvg = ((stats.confidenceAvg || 0) + session.confidenceScore) / 2;
-    stats.communicationAvg = ((stats.communicationAvg || 0) + session.communicationScore) / 2;
-    localStorage.setItem('userStats', JSON.stringify(stats));
   };
 
   const formatTime = (seconds: number) => {
@@ -458,71 +426,12 @@ const Interview = () => {
               You completed {questions.length} questions with {getPersonalityById(selectedPersonality)?.name}
             </p>
             
-            {/* AI-Enhanced Results */}
-            <div className="grid grid-cols-4 gap-4 mb-8">
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-white">
-                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.score, 0) / recordedResponses.length)}%
-                </div>
-                <div className="text-gray-400">Overall Score</div>
-                <div className="mt-2">
-                  <Badge className="bg-purple-500/20 text-purple-300 text-xs">
-                    AI Analyzed
-                  </Badge>
-                </div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-cyan-400">
-                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.confidence, 0) / recordedResponses.length)}%
-                </div>
-                <div className="text-gray-400">Confidence</div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-400">
-                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.eyeContact, 0) / recordedResponses.length)}%
-                </div>
-                <div className="text-gray-400">Eye Contact</div>
-              </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-2xl font-bold text-yellow-400">
-                  {Math.round(recordedResponses.reduce((acc, r) => acc + r.speechClarity, 0) / recordedResponses.length)}%
-                </div>
-                <div className="text-gray-400">Speech Clarity</div>
-              </div>
-            </div>
-
-            {/* AI Recommendations */}
-            <Card className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 p-6 mb-6 text-left">
-              <div className="flex items-center space-x-2 mb-4">
-                <Brain className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-white font-semibold">AI Recommendations</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-green-400 font-medium mb-2">Strengths Identified</h4>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Strong technical communication</li>
-                    <li>• Good use of examples</li>
-                    <li>• Confident delivery</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="text-yellow-400 font-medium mb-2">Areas to Improve</h4>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Add more specific metrics</li>
-                    <li>• Practice technical depth</li>
-                    <li>• Improve pacing</li>
-                  </ul>
-                </div>
-              </div>
-            </Card>
-            
             <div className="flex gap-4 justify-center">
               <Button
-                onClick={() => navigate('/analytics')}
+                onClick={() => setCurrentView('history')}
                 className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
               >
-                View AI Analytics
+                View History
               </Button>
               <Button
                 onClick={() => window.location.reload()}
@@ -555,63 +464,51 @@ const Interview = () => {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-white">AI Interview Practice</h1>
-              <p className="text-sm text-gray-400">Real interview simulation with AI personalities</p>
+              <p className="text-sm text-gray-400">Advanced interview coaching with detailed feedback</p>
             </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              className="text-gray-400 hover:text-white"
+              onClick={() => setCurrentView('history')}
+            >
+              <History className="w-4 h-4 mr-2" />
+              History
+            </Button>
           </div>
         </div>
       </header>
 
       <main className="p-6 max-w-4xl mx-auto">
-        {!sessionStarted ? (
-          /* Setup Phase */
+        {currentView === 'setup' && (
           <div className="space-y-8">
-            {/* AI Personality Selection */}
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Choose Your AI Interviewer</h2>
-                {(() => {
-                  const suggestion = getAIPersonalitySuggestion();
-                  return (
-                    <div className="flex items-center space-x-2">
-                      <Brain className="w-4 h-4 text-cyan-400" />
-                      <span className="text-cyan-400 text-sm">AI Suggests: {aiPersonalities.find(p => p.id === suggestion.suggested)?.name}</span>
-                    </div>
-                  );
-                })()}
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
-                {aiPersonalities.map(personality => {
-                  const suggestion = getAIPersonalitySuggestion();
-                  const isRecommended = personality.id === suggestion.suggested;
-                  
-                  return (
+            {/* Question Category Selection */}
+            <QuestionCategories
+              selectedCategory={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+            />
+
+            {selectedCategory && (
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
+                <h2 className="text-2xl font-bold text-white mb-6">Choose Your AI Interviewer</h2>
+                
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                  {aiPersonalities.map(personality => (
                     <button
                       key={personality.id}
                       onClick={() => setSelectedPersonality(personality.id)}
-                      className={`p-6 rounded-lg border-2 transition-all text-left relative ${
+                      className={`p-6 rounded-lg border-2 transition-all text-left ${
                         selectedPersonality === personality.id
                           ? 'border-purple-500 bg-purple-500/20'
-                          : isRecommended
-                          ? 'border-cyan-500 bg-cyan-500/10'
                           : 'border-white/20 bg-white/5 hover:bg-white/10'
                       }`}
                     >
-                      {isRecommended && (
-                        <div className="absolute top-2 right-2">
-                          <Badge className="bg-cyan-500/20 text-cyan-300 text-xs">
-                            AI Recommended
-                          </Badge>
-                        </div>
-                      )}
                       <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${personality.color} flex items-center justify-center text-white mb-4`}>
                         {personality.icon}
                       </div>
                       <h3 className="text-white font-semibold text-lg mb-2">{personality.name}</h3>
                       <p className="text-gray-300 text-sm mb-3">{personality.description}</p>
-                      {isRecommended && (
-                        <p className="text-cyan-300 text-xs mb-3 italic">{suggestion.reason}</p>
-                      )}
                       <div className="flex flex-wrap gap-2">
                         {personality.traits.map(trait => (
                           <Badge key={trait} variant="outline" className="border-gray-500 text-gray-300 text-xs">
@@ -620,86 +517,22 @@ const Interview = () => {
                         ))}
                       </div>
                     </button>
-                  );
-                })}
-              </div>
-            </Card>
-
-            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8">
-              <h2 className="text-2xl font-bold text-white mb-6">Setup Your Interview</h2>
-              
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div>
-                  <label className="block text-white font-medium mb-3">Select Company</label>
-                  <div className="grid gap-3">
-                    {Object.keys(companyQuestions).map(company => (
-                      <button
-                        key={company}
-                        onClick={() => setSelectedCompany(company)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedCompany === company
-                            ? 'border-purple-500 bg-purple-500/20'
-                            : 'border-white/20 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="text-white font-medium capitalize">{company}</div>
-                      </button>
-                    ))}
-                  </div>
+                  ))}
                 </div>
 
-                <div>
-                  <label className="block text-white font-medium mb-3">Interview Type</label>
-                  <div className="grid gap-3">
-                    {['technical', 'behavioral'].map(type => (
-                      <button
-                        key={type}
-                        onClick={() => setSelectedType(type)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedType === type
-                            ? 'border-cyan-500 bg-cyan-500/20'
-                            : 'border-white/20 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="text-white font-medium capitalize">{type}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Coaching Tips */}
-              {selectedType && (
-                <Card className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border border-purple-500/30 p-6 mb-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Brain className="w-5 h-5 text-cyan-400" />
-                    <h3 className="text-white font-semibold">AI Coaching Tips for {selectedType} interviews</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {getAICoachingTips().map((tip, index) => (
-                      <div key={index} className="bg-white/10 rounded-lg p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="text-cyan-400">{tip.icon}</div>
-                          <h4 className="text-white font-medium text-sm">{tip.title}</h4>
-                        </div>
-                        <p className="text-gray-300 text-xs">{tip.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-              <Button
-                onClick={startInterview}
-                disabled={!selectedCompany || !selectedType || !selectedPersonality}
-                className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
-              >
-                Start AI Interview with {selectedPersonality ? getPersonalityById(selectedPersonality)?.name : 'AI'}
-              </Button>
-            </Card>
+                <Button
+                  onClick={startInterview}
+                  disabled={!selectedCategory || !selectedPersonality}
+                  className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+                >
+                  Start AI Interview
+                </Button>
+              </Card>
+            )}
           </div>
-        ) : (
-          /* Interview Phase */
+        )}
+
+        {currentView === 'interview' && (
           <div className="space-y-6">
             {/* Progress and Live Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -710,7 +543,7 @@ const Interview = () => {
                       Question {currentQuestionIndex + 1} of {questions.length}
                     </h3>
                     <p className="text-gray-400">
-                      {selectedCompany} • {selectedType} • {getPersonalityById(selectedPersonality)?.name}
+                      {selectedCategory} • {getPersonalityById(selectedPersonality)?.name}
                     </p>
                   </div>
                   <div className="text-right">
@@ -814,9 +647,53 @@ const Interview = () => {
             </Card>
           </div>
         )}
+
+        {currentView === 'feedback' && currentFeedback && (
+          <div className="space-y-6">
+            <InterviewFeedback
+              questionText={currentFeedback.questionText}
+              transcription={currentFeedback.transcription}
+              duration={currentFeedback.duration}
+              metrics={currentFeedback.metrics}
+              suggestions={currentFeedback.suggestions}
+              questionType={currentFeedback.questionType}
+            />
+            
+            <div className="flex justify-center space-x-4">
+              <Button
+                onClick={nextQuestion}
+                className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+              >
+                {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Interview'}
+              </Button>
+              <Button
+                onClick={() => setCurrentView('setup')}
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                Back to Setup
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'history' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Interview History</h2>
+              <Button
+                onClick={() => setCurrentView('setup')}
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+              >
+                New Interview
+              </Button>
+            </div>
+            <InterviewHistory currentUser={currentUser} />
+          </div>
+        )}
       </main>
       
-      {/* AI Assistant */}
       <AIAssistant context="interview" />
     </div>
   );
