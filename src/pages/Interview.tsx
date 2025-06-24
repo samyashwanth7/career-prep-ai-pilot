@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, History } from 'lucide-react';
+import { ArrowLeft, History, User, Trophy, Brain, Briefcase } from 'lucide-react';
 import AIAssistant from '@/components/AIAssistant';
 import InterviewSetup from '@/components/interview/InterviewSetup';
 import InterviewSession from '@/components/interview/InterviewSession';
 import InterviewFeedback from '@/components/interview/InterviewFeedback';
 import InterviewHistory from '@/components/interview/InterviewHistory';
 import InterviewComplete from '@/components/interview/InterviewComplete';
+import { categories } from '@/components/interview/QuestionCategories';
 
 interface AIPersonality {
   id: string;
