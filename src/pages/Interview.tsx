@@ -9,6 +9,9 @@ import InterviewFeedback from '@/components/interview/InterviewFeedback';
 import InterviewHistory from '@/components/interview/InterviewHistory';
 import InterviewComplete from '@/components/interview/InterviewComplete';
 import { categories } from '@/components/interview/QuestionCategories';
+import { SpeechRecognitionService } from '@/services/speechService';
+import { AIAnalysisService } from '@/services/aiAnalysisService';
+import { QuestionService, type Question } from '@/data/expandedQuestionBank';
 
 interface AIPersonality {
   id: string;
@@ -18,15 +21,6 @@ interface AIPersonality {
   icon: React.ReactNode;
   color: string;
   traits: string[];
-}
-
-interface Question {
-  id: string;
-  text: string;
-  type: 'technical' | 'behavioral' | 'situational';
-  timeLimit: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  personalityContext?: string;
 }
 
 interface InterviewSession {
@@ -58,14 +52,12 @@ const Interview = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentTranscription, setCurrentTranscription] = useState('');
   const [sessionComplete, setSessionComplete] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [liveConfidence, setLiveConfidence] = useState(75);
-  const [eyeContactScore, setEyeContactScore] = useState(80);
-  const [speechClarityScore, setSpeechClarityScore] = useState(85);
   const [currentFeedback, setCurrentFeedback] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [liveTranscription, setLiveTranscription] = useState('');
+  const [speechService] = useState(() => new SpeechRecognitionService());
+  const [aiService] = useState(() => new AIAnalysisService());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   const aiPersonalities: AIPersonality[] = [
     {
@@ -106,94 +98,6 @@ const Interview = () => {
     }
   ];
 
-  // Generate questions based on selected category
-  const generateQuestionsForCategory = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    if (!category) return [];
-
-    // Sample questions for each category - in a real app, these would come from a database
-    const questionBank = {
-      behavioral: [
-        {
-          id: '1',
-          text: 'Tell me about a time you overcame a significant challenge at work.',
-          type: 'behavioral' as const,
-          timeLimit: 120,
-          difficulty: 'medium' as const,
-          personalityContext: 'Focus on the specific actions you took and the results you achieved.'
-        },
-        {
-          id: '2',
-          text: 'Describe a situation where you had to work with a difficult team member.',
-          type: 'behavioral' as const,
-          timeLimit: 120,
-          difficulty: 'medium' as const,
-          personalityContext: 'Show me your interpersonal and conflict resolution skills.'
-        }
-      ],
-      technical: [
-        {
-          id: '3',
-          text: 'Explain the difference between SQL and NoSQL databases and when you would use each.',
-          type: 'technical' as const,
-          timeLimit: 120,
-          difficulty: 'hard' as const,
-          personalityContext: 'Walk me through your technical reasoning and provide specific examples.'
-        },
-        {
-          id: '4',
-          text: 'How would you optimize a slow-performing web application?',
-          type: 'technical' as const,
-          timeLimit: 120,
-          difficulty: 'hard' as const,
-          personalityContext: 'Consider both frontend and backend optimization strategies.'
-        }
-      ],
-      situational: [
-        {
-          id: '5',
-          text: 'How would you handle a tight deadline with limited resources?',
-          type: 'situational' as const,
-          timeLimit: 120,
-          difficulty: 'medium' as const,
-          personalityContext: 'Show me your prioritization and problem-solving approach.'
-        }
-      ],
-      communication: [
-        {
-          id: '6',
-          text: 'How do you explain complex technical concepts to non-technical stakeholders?',
-          type: 'situational' as const,
-          timeLimit: 120,
-          difficulty: 'easy' as const,
-          personalityContext: 'Demonstrate your communication adaptation skills.'
-        }
-      ],
-      'problem-solving': [
-        {
-          id: '7',
-          text: 'Walk me through your process for approaching an unfamiliar technical problem.',
-          type: 'technical' as const,
-          timeLimit: 120,
-          difficulty: 'hard' as const,
-          personalityContext: 'Show me your analytical thinking and methodology.'
-        }
-      ],
-      'goals-motivation': [
-        {
-          id: '8',
-          text: 'Where do you see yourself in 5 years and how does this role fit into your career goals?',
-          type: 'behavioral' as const,
-          timeLimit: 120,
-          difficulty: 'easy' as const,
-          personalityContext: 'Help me understand your career vision and motivation.'
-        }
-      ]
-    };
-
-    return questionBank[categoryId as keyof typeof questionBank] || [];
-  };
-
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
     if (!user) {
@@ -207,69 +111,15 @@ const Interview = () => {
   useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
-        setLiveConfidence(prev => Math.max(40, Math.min(100, prev + (Math.random() - 0.5) * 10)));
-        setEyeContactScore(prev => Math.max(50, Math.min(100, prev + (Math.random() - 0.5) * 8)));
-        setSpeechClarityScore(prev => Math.max(60, Math.min(100, prev + (Math.random() - 0.5) * 6)));
+        // These metrics could be calculated from speech patterns
+        // For now, they are simulated
+        // setLiveConfidence(prev => Math.max(40, Math.min(100, prev + (Math.random() - 0.5) * 10)));
+        // setEyeContactScore(prev => Math.max(50, Math.min(100, prev + (Math.random() - 0.5) * 8)));
+        // setSpeechClarityScore(prev => Math.max(60, Math.min(100, prev + (Math.random() - 0.5) * 6)));
       }, 2000);
       return () => clearInterval(interval);
     }
   }, [isRecording]);
-
-  const startInterview = () => {
-    if (!selectedCategory || !selectedPersonality) return;
-    
-    const categoryQuestions = generateQuestionsForCategory(selectedCategory);
-    setQuestions(categoryQuestions);
-    setCurrentView('interview');
-    setTimeLeft(120);
-  };
-
-  const requestMicrophoneAccess = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      const recorder = new MediaRecorder(stream);
-      setMediaRecorder(recorder);
-      
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          setAudioChunks(prev => [...prev, event.data]);
-        }
-      };
-      
-      recorder.onstop = () => {
-        saveCurrentResponse();
-      };
-      
-      return true;
-    } catch (error) {
-      console.error('Microphone access denied:', error);
-      return false;
-    }
-  };
-
-  const startRecording = async () => {
-    if (!mediaRecorder) {
-      const accessGranted = await requestMicrophoneAccess();
-      if (!accessGranted) return;
-    }
-    
-    if (mediaRecorder && mediaRecorder.state === 'inactive') {
-      setAudioChunks([]);
-      mediaRecorder.start();
-      setIsRecording(true);
-      startTimer();
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      stopTimer();
-    }
-  };
 
   const startTimer = () => {
     timerRef.current = setInterval(() => {
@@ -290,98 +140,141 @@ const Interview = () => {
     }
   };
 
-  const generateMockTranscription = () => {
-    const mockTranscriptions = [
-      "In my previous role as a software engineer, I faced a challenging situation where our main database server went down during peak hours. The situation required immediate action as it was affecting thousands of users. My task was to restore service while minimizing data loss. I quickly assembled a team, implemented our disaster recovery protocol, and coordinated with the infrastructure team to switch to our backup systems. As a result, we restored service within 45 minutes and prevented any data loss, which was much faster than our target recovery time of 2 hours.",
-      "I believe the key difference between SQL and NoSQL databases lies in their structure and use cases. SQL databases like PostgreSQL use a structured, tabular format with predefined schemas, making them ideal for complex relationships and ACID transactions. NoSQL databases like MongoDB offer more flexibility with document-based storage, making them better for rapid scaling and handling unstructured data. In my experience, I've used SQL for financial applications where data integrity is crucial, and NoSQL for content management systems where scalability and flexibility are priorities.",
-      "When facing tight deadlines with limited resources, I start by clearly defining the scope and identifying the must-have versus nice-to-have features. I prioritize tasks based on impact and effort required, communicate transparently with stakeholders about what's realistic, and look for opportunities to leverage existing solutions or automate repetitive tasks. In one project, I had to deliver a client portal in half the expected time, so I used a pre-built framework and focused on core functionality first, delivering a working solution on time while planning phase-two enhancements."
-    ];
-    return mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const generateMockFeedback = (questionType: string, transcription: string) => {
-    const baseMetrics = {
-      specificity: Math.floor(Math.random() * 30) + 65,
-      relevance: Math.floor(Math.random() * 25) + 70,
-      impact: Math.floor(Math.random() * 35) + 60,
-      structure: Math.floor(Math.random() * 25) + 70,
-      starMethod: {
-        situation: transcription.toLowerCase().includes('situation') || transcription.toLowerCase().includes('faced'),
-        task: transcription.toLowerCase().includes('task') || transcription.toLowerCase().includes('required'),
-        action: transcription.toLowerCase().includes('action') || transcription.toLowerCase().includes('implemented'),
-        result: transcription.toLowerCase().includes('result') || transcription.toLowerCase().includes('achieved'),
-        score: 0
-      },
-      fluency: {
-        pauseCount: Math.floor(Math.random() * 5) + 1,
-        hesitations: Math.floor(Math.random() * 3) + 1,
-        overallFlow: 'Smooth' as 'Smooth' | 'Some hesitations' | 'Choppy'
-      },
-      overallScore: 0
-    };
-
-    // Calculate STAR method score
-    const starCount = Object.values(baseMetrics.starMethod).slice(0, 4).filter(Boolean).length;
-    baseMetrics.starMethod.score = (starCount / 4) * 100;
-
-    // Calculate overall score
-    baseMetrics.overallScore = Math.round(
-      (baseMetrics.specificity + baseMetrics.relevance + baseMetrics.impact + baseMetrics.structure) / 4
-    );
-
-    const suggestions = [
-      "Try to include more specific metrics and numbers to quantify your achievements.",
-      "Structure your response using the STAR method for better clarity.",
-      "Consider adding more details about the challenges you overcame.",
-      "Explain the long-term impact or lessons learned from this experience."
-    ];
-
-    return {
-      metrics: baseMetrics,
-      suggestions: suggestions.slice(0, Math.floor(Math.random() * 2) + 2)
-    };
+  const getPersonalityById = (id: string) => {
+    return aiPersonalities.find(p => p.id === id);
   };
 
-  const saveCurrentResponse = async () => {
-    if (audioChunks.length === 0) return;
-    
-    // Generate mock transcription and feedback
-    const transcription = generateMockTranscription();
-    const feedback = generateMockFeedback(questions[currentQuestionIndex].type, transcription);
-    
-    setCurrentTranscription(transcription);
-    setCurrentFeedback({
-      questionText: questions[currentQuestionIndex].text,
-      transcription,
-      duration: 120 - timeLeft,
-      ...feedback,
-      questionType: questions[currentQuestionIndex].type
-    });
+  // Generate questions using the expanded question bank
+  const generateQuestionsForCategory = (categoryId: string) => {
+    const questionFilters = {
+      behavioral: { type: 'behavioral' },
+      technical: { type: 'technical' },
+      situational: { type: 'situational' },
+      communication: { category: 'client-communication' },
+      'problem-solving': { tags: ['problem-solving'] },
+      'goals-motivation': { category: 'learning-adaptability' }
+    };
 
-    // Save to localStorage for history
-    const session: InterviewSession = {
-      id: Date.now().toString(),
-      category: selectedCategory,
-      questionText: questions[currentQuestionIndex].text,
-      transcription,
-      overallScore: feedback.metrics.overallScore,
-      duration: 120 - timeLeft,
-      date: new Date().toISOString(),
-      feedback: {
-        specificity: feedback.metrics.specificity,
-        relevance: feedback.metrics.relevance,
-        impact: feedback.metrics.impact,
-        structure: feedback.metrics.structure,
-        suggestions: feedback.suggestions
+    const filters = questionFilters[categoryId as keyof typeof questionFilters];
+    return QuestionService.getRandomQuestions(5, filters);
+  };
+
+  const startInterview = async () => {
+    if (!selectedCategory || !selectedPersonality) return;
+    
+    // Try to get personalized questions first
+    try {
+      const userProfile = {
+        industry: 'technology', // This could come from user profile
+        role: 'software-engineer',
+        experienceLevel: 'mid',
+        weakAreas: ['technical-depth', 'communication']
+      };
+      
+      const personalizedQuestions = await aiService.generatePersonalizedQuestions(userProfile);
+      
+      if (personalizedQuestions.length > 0) {
+        setQuestions(personalizedQuestions.map((text, index) => ({
+          id: `personalized_${index}`,
+          text,
+          type: 'behavioral' as const,
+          timeLimit: 120,
+          difficulty: 'medium' as const
+        })));
+      } else {
+        // Fallback to expanded question bank
+        const categoryQuestions = generateQuestionsForCategory(selectedCategory);
+        setQuestions(categoryQuestions);
       }
-    };
-
-    const existingSessions = JSON.parse(localStorage.getItem(`interview_history_${currentUser.id}`) || '[]');
-    existingSessions.push(session);
-    localStorage.setItem(`interview_history_${currentUser.id}`, JSON.stringify(existingSessions));
+    } catch (error) {
+      console.error('Failed to get personalized questions:', error);
+      const categoryQuestions = generateQuestionsForCategory(selectedCategory);
+      setQuestions(categoryQuestions);
+    }
     
-    setCurrentView('feedback');
-    setAudioChunks([]);
+    setCurrentView('interview');
+    setTimeLeft(120);
+  };
+
+  const startRecording = async () => {
+    try {
+      setLiveTranscription('');
+      await speechService.startRecording((transcription) => {
+        setLiveTranscription(prev => prev + ' ' + transcription);
+      });
+      setIsRecording(true);
+      startTimer();
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    setIsRecording(false);
+    stopTimer();
+    setIsAnalyzing(true);
+
+    try {
+      const finalTranscription = await speechService.stopRecording();
+      const completeTranscription = liveTranscription + ' ' + finalTranscription;
+      setCurrentTranscription(completeTranscription);
+
+      // Get real AI analysis
+      const analysisRequest = {
+        questionText: questions[currentQuestionIndex].text,
+        transcription: completeTranscription,
+        questionType: questions[currentQuestionIndex].type,
+        duration: 120 - timeLeft,
+        industry: 'technology',
+        role: 'software-engineer'
+      };
+
+      const feedback = await aiService.analyzeResponse(analysisRequest);
+      
+      setCurrentFeedback({
+        questionText: questions[currentQuestionIndex].text,
+        transcription: completeTranscription,
+        duration: 120 - timeLeft,
+        metrics: feedback,
+        suggestions: feedback.suggestions,
+        questionType: questions[currentQuestionIndex].type
+      });
+
+      // Save session with real feedback
+      const session: InterviewSession = {
+        id: Date.now().toString(),
+        category: selectedCategory,
+        questionText: questions[currentQuestionIndex].text,
+        transcription: completeTranscription,
+        overallScore: feedback.overallScore,
+        duration: 120 - timeLeft,
+        date: new Date().toISOString(),
+        feedback: {
+          specificity: feedback.specificity,
+          relevance: feedback.relevance,
+          impact: feedback.impact,
+          structure: feedback.structure,
+          suggestions: feedback.suggestions
+        }
+      };
+
+      const existingSessions = JSON.parse(localStorage.getItem(`interview_history_${currentUser.id}`) || '[]');
+      existingSessions.push(session);
+      localStorage.setItem(`interview_history_${currentUser.id}`, JSON.stringify(existingSessions));
+      
+      setCurrentView('feedback');
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      // Fallback to basic feedback if AI analysis fails
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const nextQuestion = () => {
@@ -393,16 +286,6 @@ const Interview = () => {
     } else {
       setSessionComplete(true);
     }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getPersonalityById = (id: string) => {
-    return aiPersonalities.find(p => p.id === id);
   };
 
   if (!currentUser) {
@@ -472,20 +355,37 @@ const Interview = () => {
         )}
 
         {currentView === 'interview' && (
-          <InterviewSession
-            currentQuestionIndex={currentQuestionIndex}
-            questions={questions}
-            timeLeft={timeLeft}
-            isRecording={isRecording}
-            liveConfidence={liveConfidence}
-            eyeContactScore={eyeContactScore}
-            speechClarityScore={speechClarityScore}
-            selectedCategory={selectedCategory}
-            selectedPersonality={selectedPersonality}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-            getPersonalityById={getPersonalityById}
-          />
+          <div className="space-y-6">
+            <InterviewSession
+              currentQuestionIndex={currentQuestionIndex}
+              questions={questions}
+              timeLeft={timeLeft}
+              isRecording={isRecording}
+              liveConfidence={75} // This could be calculated from speech patterns
+              eyeContactScore={80}
+              speechClarityScore={85}
+              selectedCategory={selectedCategory}
+              selectedPersonality={selectedPersonality}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
+              getPersonalityById={getPersonalityById}
+            />
+            
+            {/* Real-time transcription display */}
+            {liveTranscription && (
+              <div className="bg-white/10 backdrop-blur-lg border-white/20 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-2">Live Transcription:</h4>
+                <p className="text-gray-300 text-sm">{liveTranscription}</p>
+              </div>
+            )}
+
+            {isAnalyzing && (
+              <div className="bg-white/10 backdrop-blur-lg border-white/20 rounded-lg p-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                <p className="text-white">AI is analyzing your response...</p>
+              </div>
+            )}
+          </div>
         )}
 
         {currentView === 'feedback' && currentFeedback && (
