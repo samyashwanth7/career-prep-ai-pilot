@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface AnalysisRequest {
   questionText: string;
   transcription: string;
-  questionType: 'technical' | 'behavioral' | 'situational';
+  questionType: 'technical' | 'behavioral' | 'situational' | 'industry-specific';
   duration: number;
   industry?: string;
   role?: string;

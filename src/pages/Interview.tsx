@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -180,13 +181,19 @@ const Interview = () => {
       const personalizedQuestions = await aiService.generatePersonalizedQuestions(userProfile);
       
       if (personalizedQuestions.length > 0) {
-        setQuestions(personalizedQuestions.map((text, index) => ({
+        // Convert personalized question strings to proper Question objects
+        const convertedQuestions: Question[] = personalizedQuestions.map((text, index) => ({
           id: `personalized_${index}`,
           text,
           type: 'behavioral' as const,
-          timeLimit: 120,
-          difficulty: 'medium' as const
-        })));
+          difficulty: 'mid' as const,
+          category: 'personalized',
+          industry: ['technology'],
+          role: ['software-engineer'],
+          tags: ['personalized'],
+          timeRecommendation: 120
+        }));
+        setQuestions(convertedQuestions);
       } else {
         // Fallback to expanded question bank
         const categoryQuestions = generateQuestionsForCategory(selectedCategory);
@@ -225,11 +232,19 @@ const Interview = () => {
       const completeTranscription = liveTranscription + ' ' + finalTranscription;
       setCurrentTranscription(completeTranscription);
 
+      // Map question type to match AnalysisRequest interface
+      const mapQuestionType = (type: string) => {
+        if (type === 'industry-specific') {
+          return 'behavioral'; // Map industry-specific to behavioral for analysis
+        }
+        return type as 'technical' | 'behavioral' | 'situational';
+      };
+
       // Get real AI analysis
       const analysisRequest = {
         questionText: questions[currentQuestionIndex].text,
         transcription: completeTranscription,
-        questionType: questions[currentQuestionIndex].type,
+        questionType: mapQuestionType(questions[currentQuestionIndex].type),
         duration: 120 - timeLeft,
         industry: 'technology',
         role: 'software-engineer'
