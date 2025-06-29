@@ -32,7 +32,7 @@ const Sidebar: React.FC = () => {
         {/* Logo or Icon only when collapsed */}
         <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
           <Circle className="w-6 h-6 text-indigo-400" />
-          {!collapsed && <span className="font-bold font-sans">AceInterviewAi</span>}
+          {!collapsed && <span className="font-bold font-sans">AceInterviewAI</span>}
         </span>
         <button
           className="ml-auto text-gray-400 hover:text-gray-100"
