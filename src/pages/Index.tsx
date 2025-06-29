@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -9,7 +8,7 @@ export default function Index() {
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-12 px-4">
       <div className="max-w-2xl text-center space-y-8">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white tracking-tight">
-          Welcome to <span className="text-indigo-600 dark:text-indigo-400">MyCorpPro</span>
+          Welcome to <span className="text-indigo-600 dark:text-indigo-400">AceInterviewAi</span>
         </h1>
         <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 font-light leading-relaxed">
           Elevate your career journey with AI-powered tools, insights, and a professional platform tailored for success.
