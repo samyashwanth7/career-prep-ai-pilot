@@ -14,7 +14,7 @@ export default function Index() {
           Elevate your career journey with AI-powered tools, insights, and a professional platform tailored for success.
         </p>
         <Button asChild size="lg" className="mt-8 px-8 py-3 text-lg font-medium">
-          <Link to="/dashboard">
+          <Link to="/auth">
             Get Started
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
