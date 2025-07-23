@@ -93,10 +93,10 @@
 /* Custom utilities for foreground/background colors */
 @layer utilities {
   .text-foreground {
-    color: hsl(var(--foreground));
+    color: hsl(var(--foreground)) !important;
   }
   .bg-background {
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--background)) !important;
   }
 }
 
