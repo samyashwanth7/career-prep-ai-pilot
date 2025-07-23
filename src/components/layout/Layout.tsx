@@ -1,5 +1,6 @@
 import React from "react";
 import Sidebar from "./Sidebar";
+import Footer from "./Footer";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -53,7 +54,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </header>
         <main className="p-8 flex-1 flex flex-col animate-fade-in transition-main">{children}</main>
+        {!shouldShowSidebar && <Footer />}
       </div>
+      {shouldShowSidebar && <Footer />}
     </div>
   );
 };
