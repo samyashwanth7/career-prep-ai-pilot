@@ -13,7 +13,6 @@ import {
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/dashboard", icon: <Home /> },
-  { label: "My Progress", path: "/my-progress", icon: <BarChart2 /> },
   { label: "CV Builder", path: "/cv-builder", icon: <PenTool /> },
   { label: "Jobs", path: "/jobs", icon: <Briefcase /> },
   { label: "Analytics", path: "/analytics", icon: <BarChart2 /> },

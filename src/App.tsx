@@ -4,12 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
-import MyProgress from "./pages/MyProgress";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Demo from "./pages/Demo";
 import Jobs from "./pages/Jobs";
@@ -27,103 +24,107 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout><Index /></Layout>} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-            <Route path="/my-progress" element={<ProtectedRoute><MyProgress /></ProtectedRoute>} />
-            
-            {/* Protected pages */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Layout><Dashboard /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/demo"
-              element={
-                <ProtectedRoute>
-                  <Layout><Demo /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/cv-builder"
-              element={
-                <ProtectedRoute>
-                  <Layout><CVBuilder /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/jobs"
-              element={
-                <ProtectedRoute>
-                  <Layout><Jobs /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/interview"
-              element={
-                <ProtectedRoute>
-                  <Layout><Interview /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Layout><Analytics /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/career-roadmap"
-              element={
-                <ProtectedRoute>
-                  <Layout><CareerRoadmap /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resume-analyzer"
-              element={
-                <ProtectedRoute>
-                  <Layout><ResumeAnalyzer /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/company-practice"
-              element={
-                <ProtectedRoute>
-                  <Layout><CompanyPractice /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bulk-applications"
-              element={
-                <ProtectedRoute>
-                  <Layout><BulkApplications /></Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Layout>
+                <Index />
+              </Layout>
+            }
+          />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          {/* Pages after login use the professional Layout */}
+          <Route
+            path="/dashboard"
+            element={
+              <Layout>
+                <Dashboard />
+              </Layout>
+            }
+          />
+          <Route
+            path="/demo"
+            element={
+              <Layout>
+                <Demo />
+              </Layout>
+            }
+          />
+          <Route
+            path="/cv-builder"
+            element={
+              <Layout>
+                <CVBuilder />
+              </Layout>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <Layout>
+                <Jobs />
+              </Layout>
+            }
+          />
+          <Route
+            path="/interview"
+            element={
+              <Layout>
+                <Interview />
+              </Layout>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <Layout>
+                <Analytics />
+              </Layout>
+            }
+          />
+          <Route
+            path="/career-roadmap"
+            element={
+              <Layout>
+                <CareerRoadmap />
+              </Layout>
+            }
+          />
+          <Route
+            path="/resume-analyzer"
+            element={
+              <Layout>
+                <ResumeAnalyzer />
+              </Layout>
+            }
+          />
+          <Route
+            path="/company-practice"
+            element={
+              <Layout>
+                <CompanyPractice />
+              </Layout>
+            }
+          />
+          <Route
+            path="/bulk-applications"
+            element={
+              <Layout>
+                <BulkApplications />
+              </Layout>
+            }
+          />
+          {/* ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
   </QueryClientProvider>
 );
 
