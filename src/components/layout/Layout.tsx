@@ -1,3 +1,4 @@
+
 import React from "react";
 import Sidebar from "./Sidebar";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {/* Header */}
         <header className="flex items-center justify-between px-8 h-16 border-b border-sidebar-border bg-secondary dark:bg-sidebar transition-main">
           <div className="text-xl font-bold tracking-tight text-primary dark:text-white select-none transition-main">
-            AceInterviewAI
+            AceInterview AI
           </div>
           <div>
             <Button
