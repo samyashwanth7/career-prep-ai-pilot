@@ -4,7 +4,15 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Mic, MicOff } from 'lucide-react';
-import { Question } from '@/data/expandedQuestionBank';
+
+interface Question {
+  id: string;
+  text: string;
+  type: 'technical' | 'behavioral' | 'situational';
+  timeLimit: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  personalityContext?: string;
+}
 
 interface InterviewSessionProps {
   currentQuestionIndex: number;
@@ -108,6 +116,13 @@ const InterviewSession: React.FC<InterviewSessionProps> = ({
           <h2 className="text-xl font-semibold text-foreground mb-4">
             {questions[currentQuestionIndex]?.text}
           </h2>
+          {questions[currentQuestionIndex]?.personalityContext && (
+            <div className="bg-purple-500/20 border border-purple-500/30 rounded-lg p-4 mb-4">
+              <p className="text-purple-200 text-sm">
+                <strong>{getPersonalityById(selectedPersonality)?.name}:</strong> {questions[currentQuestionIndex]?.personalityContext}
+              </p>
+            </div>
+          )}
           <p className="text-muted-foreground">
             Take your time to think, then click the microphone to start recording your response.
           </p>

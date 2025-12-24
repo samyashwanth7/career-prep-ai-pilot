@@ -9,23 +9,46 @@ export async function uploadResumeFile(userId: string, file: File): Promise<stri
   throw new Error("Resume file upload to Supabase Storage not yet implemented.");
 }
 
-// TODO: These functions require a job_applications table to be created in Supabase
-// Uncomment and use once the table migration is applied
-
 export async function fetchJobApplications(userId: string) {
-  // Placeholder - table not yet created
-  console.warn("job_applications table not yet created");
-  return [];
+  const { data, error } = await supabase
+    .from("job_applications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("applied_at", { ascending: false });
+  if (error) throw error;
+  return data;
 }
 
 export async function createJobApplication(userId: string, job: Job, resumeUrl: string, coverLetter: string) {
-  // Placeholder - table not yet created
-  console.warn("job_applications table not yet created");
-  return null;
+  const { error, data } = await supabase
+    .from("job_applications")
+    .insert([
+      {
+        user_id: userId,
+        job_title: job.title,
+        company: job.company,
+        job_data: job as any,
+        resume_url: resumeUrl,
+        cover_letter: coverLetter,
+        status: "submitted",
+        applied_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+    ])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export function subscribeToJobApplications(userId: string, cb: (payload: any) => void) {
-  // Placeholder - table not yet created
-  console.warn("job_applications table not yet created");
-  return null;
+  const channel = supabase
+    .channel("job-apps")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "job_applications", filter: `user_id=eq.${userId}` },
+      cb
+    )
+    .subscribe();
+  return channel;
 }
