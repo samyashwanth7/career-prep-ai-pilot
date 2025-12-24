@@ -29,14 +29,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Layout>
-                <Index />
-              </Layout>
-            }
-          />
+          {/* Landing page without Layout */}
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           {/* Pages after login use the professional Layout */}
