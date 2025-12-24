@@ -72,8 +72,4 @@
     @apply bg-background text-foreground transition-main;
   }
 
-  /* Force dark mode by default */
-  html {
-    @apply dark;
-  }
 }
