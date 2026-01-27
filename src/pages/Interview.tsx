@@ -23,7 +23,7 @@ interface AIPersonality {
   traits: string[];
 }
 
-interface InterviewSession {
+interface StoredSession {
   id: string;
   category: string;
   questionText: string;
@@ -107,15 +107,10 @@ const Interview = () => {
     setCurrentUser(JSON.parse(user));
   }, [navigate]);
 
-  // Simulate real-time confidence and metrics updates
   useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
         // These metrics could be calculated from speech patterns
-        // For now, they are simulated
-        // setLiveConfidence(prev => Math.max(40, Math.min(100, prev + (Math.random() - 0.5) * 10)));
-        // setEyeContactScore(prev => Math.max(50, Math.min(100, prev + (Math.random() - 0.5) * 8)));
-        // setSpeechClarityScore(prev => Math.max(60, Math.min(100, prev + (Math.random() - 0.5) * 6)));
       }, 2000);
       return () => clearInterval(interval);
     }
@@ -150,9 +145,8 @@ const Interview = () => {
     return aiPersonalities.find(p => p.id === id);
   };
 
-  // Generate questions using the expanded question bank
-  const generateQuestionsForCategory = (categoryId: string) => {
-    const questionFilters = {
+  const generateQuestionsForCategory = (categoryId: string): Question[] => {
+    const questionFilters: Record<string, any> = {
       behavioral: { type: 'behavioral' },
       technical: { type: 'technical' },
       situational: { type: 'situational' },
@@ -161,17 +155,29 @@ const Interview = () => {
       'goals-motivation': { category: 'learning-adaptability' }
     };
 
-    const filters = questionFilters[categoryId as keyof typeof questionFilters];
+    const filters = questionFilters[categoryId] || {};
     return QuestionService.getRandomQuestions(5, filters);
+  };
+
+  const createQuestionFromText = (text: string, index: number): Question => {
+    return {
+      id: `personalized_${index}`,
+      text,
+      type: 'behavioral',
+      difficulty: 'mid',
+      category: 'personalized',
+      tags: ['personalized', 'ai-generated'],
+      timeRecommendation: 120,
+      timeLimit: 120
+    };
   };
 
   const startInterview = async () => {
     if (!selectedCategory || !selectedPersonality) return;
     
-    // Try to get personalized questions first
     try {
       const userProfile = {
-        industry: 'technology', // This could come from user profile
+        industry: 'technology',
         role: 'software-engineer',
         experienceLevel: 'mid',
         weakAreas: ['technical-depth', 'communication']
@@ -180,15 +186,8 @@ const Interview = () => {
       const personalizedQuestions = await aiService.generatePersonalizedQuestions(userProfile);
       
       if (personalizedQuestions.length > 0) {
-        setQuestions(personalizedQuestions.map((text, index) => ({
-          id: `personalized_${index}`,
-          text,
-          type: 'behavioral' as const,
-          timeLimit: 120,
-          difficulty: 'medium' as const
-        })));
+        setQuestions(personalizedQuestions.map((text, index) => createQuestionFromText(text, index)));
       } else {
-        // Fallback to expanded question bank
         const categoryQuestions = generateQuestionsForCategory(selectedCategory);
         setQuestions(categoryQuestions);
       }
@@ -225,11 +224,13 @@ const Interview = () => {
       const completeTranscription = liveTranscription + ' ' + finalTranscription;
       setCurrentTranscription(completeTranscription);
 
-      // Get real AI analysis
+      const currentQuestion = questions[currentQuestionIndex];
+      const questionType = currentQuestion.type === 'industry-specific' ? 'situational' : currentQuestion.type;
+
       const analysisRequest = {
-        questionText: questions[currentQuestionIndex].text,
+        questionText: currentQuestion.text,
         transcription: completeTranscription,
-        questionType: questions[currentQuestionIndex].type,
+        questionType: questionType as 'technical' | 'behavioral' | 'situational',
         duration: 120 - timeLeft,
         industry: 'technology',
         role: 'software-engineer'
@@ -238,19 +239,18 @@ const Interview = () => {
       const feedback = await aiService.analyzeResponse(analysisRequest);
       
       setCurrentFeedback({
-        questionText: questions[currentQuestionIndex].text,
+        questionText: currentQuestion.text,
         transcription: completeTranscription,
         duration: 120 - timeLeft,
         metrics: feedback,
         suggestions: feedback.suggestions,
-        questionType: questions[currentQuestionIndex].type
+        questionType: currentQuestion.type
       });
 
-      // Save session with real feedback
-      const session: InterviewSession = {
+      const session: StoredSession = {
         id: Date.now().toString(),
         category: selectedCategory,
-        questionText: questions[currentQuestionIndex].text,
+        questionText: currentQuestion.text,
         transcription: completeTranscription,
         overallScore: feedback.overallScore,
         duration: 120 - timeLeft,
@@ -271,7 +271,6 @@ const Interview = () => {
       setCurrentView('feedback');
     } catch (error) {
       console.error('Analysis failed:', error);
-      // Fallback to basic feedback if AI analysis fails
     } finally {
       setIsAnalyzing(false);
     }
@@ -290,15 +289,15 @@ const Interview = () => {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (sessionComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+      <div className="min-h-screen bg-background p-6">
         <InterviewComplete
           questionsLength={questions.length}
           selectedPersonality={selectedPersonality}
@@ -312,28 +311,28 @@ const Interview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4">
+      <header className="bg-card border-b border-border px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              className="text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
               onClick={() => navigate('/dashboard')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
             <div>
-              <h1 className="text-xl font-bold text-white">AI Interview Practice</h1>
-              <p className="text-sm text-gray-400">Advanced interview coaching with detailed feedback</p>
+              <h1 className="text-xl font-bold text-foreground">AI Interview Practice</h1>
+              <p className="text-sm text-muted-foreground">Advanced interview coaching with detailed feedback</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              className="text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
               onClick={() => setCurrentView('history')}
             >
               <History className="w-4 h-4 mr-2" />
@@ -343,7 +342,7 @@ const Interview = () => {
         </div>
       </header>
 
-      <main className="p-6 max-w-4xl mx-auto">
+      <main className="p-6 max-w-6xl mx-auto">
         {currentView === 'setup' && (
           <InterviewSetup
             selectedCategory={selectedCategory}
@@ -361,7 +360,7 @@ const Interview = () => {
               questions={questions}
               timeLeft={timeLeft}
               isRecording={isRecording}
-              liveConfidence={75} // This could be calculated from speech patterns
+              liveConfidence={75}
               eyeContactScore={80}
               speechClarityScore={85}
               selectedCategory={selectedCategory}
@@ -371,18 +370,17 @@ const Interview = () => {
               getPersonalityById={getPersonalityById}
             />
             
-            {/* Real-time transcription display */}
             {liveTranscription && (
-              <div className="bg-white/10 backdrop-blur-lg border-white/20 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-2">Live Transcription:</h4>
-                <p className="text-gray-300 text-sm">{liveTranscription}</p>
+              <div className="bg-card border border-border rounded-lg p-4">
+                <h4 className="text-foreground font-medium mb-2">Live Transcription:</h4>
+                <p className="text-muted-foreground text-sm">{liveTranscription}</p>
               </div>
             )}
 
             {isAnalyzing && (
-              <div className="bg-white/10 backdrop-blur-lg border-white/20 rounded-lg p-6 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                <p className="text-white">AI is analyzing your response...</p>
+              <div className="bg-card border border-border rounded-lg p-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-foreground">AI is analyzing your response...</p>
               </div>
             )}
           </div>
@@ -402,14 +400,13 @@ const Interview = () => {
             <div className="flex justify-center space-x-4">
               <Button
                 onClick={nextQuestion}
-                className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+                className="gradient-primary text-white"
               >
                 {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Complete Interview'}
               </Button>
               <Button
                 onClick={() => setCurrentView('setup')}
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
               >
                 Back to Setup
               </Button>
@@ -420,11 +417,10 @@ const Interview = () => {
         {currentView === 'history' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Interview History</h2>
+              <h2 className="text-2xl font-bold text-foreground">Interview History</h2>
               <Button
                 onClick={() => setCurrentView('setup')}
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
               >
                 New Interview
               </Button>
