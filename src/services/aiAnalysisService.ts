@@ -1,10 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface AnalysisRequest {
   questionText: string;
   transcription: string;
-  questionType: 'technical' | 'behavioral' | 'situational';
+  questionType: 'technical' | 'behavioral' | 'situational' | 'industry-specific';
   duration: number;
   industry?: string;
   role?: string;
@@ -49,7 +48,6 @@ export class AIAnalysisService {
       return data;
     } catch (error) {
       console.error('Failed to analyze response:', error);
-      // Fallback to basic analysis if AI service fails
       return this.generateBasicFeedback(request);
     }
   }

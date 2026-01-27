@@ -144,13 +144,15 @@ export const useJobs = () => {
         setApplications(supaAppsRaw.map(mapRowToJobApplication));
 
         // --- Real-time subscription ---
-        const channel = mod.subscribeToJobApplications(curUser.id, async () => {
+        const subscription = mod.subscribeToJobApplications(curUser.id, async () => {
           // Re-fetch and map
           const updatedAppsRaw = await mod.fetchJobApplications(curUser.id);
           setApplications(updatedAppsRaw.map(mapRowToJobApplication));
         });
         return () => {
-          supabase.removeChannel(channel);
+          if (subscription && typeof subscription.unsubscribe === 'function') {
+            subscription.unsubscribe();
+          }
         };
       } catch (err) {
         toast({ title: "Failed to load job applications", variant: "destructive" });

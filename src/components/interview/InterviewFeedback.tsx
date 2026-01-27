@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { 
   Brain, 
   Target, 
@@ -12,7 +12,12 @@ import {
   AlertTriangle,
   Star,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  Lightbulb,
+  ArrowRight,
+  Share2,
+  Bookmark,
+  RefreshCw
 } from 'lucide-react';
 
 interface FeedbackMetrics {
@@ -20,19 +25,23 @@ interface FeedbackMetrics {
   relevance: number;
   impact: number;
   structure: number;
-  starMethod: {
+  starMethod?: {
     situation: boolean;
     task: boolean;
     action: boolean;
     result: boolean;
     score: number;
   };
-  fluency: {
+  fluency?: {
     pauseCount: number;
     hesitations: number;
     overallFlow: 'Smooth' | 'Some hesitations' | 'Choppy';
   };
   overallScore: number;
+  strengths?: string[];
+  improvements?: string[];
+  communicationClarity?: number;
+  confidence?: number;
 }
 
 interface InterviewFeedbackProps {
@@ -41,7 +50,7 @@ interface InterviewFeedbackProps {
   duration: number;
   metrics: FeedbackMetrics;
   suggestions: string[];
-  questionType: 'technical' | 'behavioral' | 'situational';
+  questionType: 'technical' | 'behavioral' | 'situational' | 'industry-specific';
 }
 
 const InterviewFeedback: React.FC<InterviewFeedbackProps> = ({
@@ -53,170 +62,267 @@ const InterviewFeedback: React.FC<InterviewFeedbackProps> = ({
   questionType
 }) => {
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-400';
-    if (score >= 60) return 'text-yellow-400';
-    return 'text-red-400';
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning';
+    return 'text-destructive';
   };
 
-  const getFlowIcon = (flow: string) => {
+  const getScoreBgColor = (score: number) => {
+    if (score >= 80) return 'bg-success/10 border-success/20';
+    if (score >= 60) return 'bg-warning/10 border-warning/20';
+    return 'bg-destructive/10 border-destructive/20';
+  };
+
+  const getScoreRingColor = (score: number) => {
+    if (score >= 80) return 'stroke-success';
+    if (score >= 60) return 'stroke-warning';
+    return 'stroke-destructive';
+  };
+
+  const getMessage = (score: number) => {
+    if (score >= 90) return "Excellent response! 🎉";
+    if (score >= 80) return "Great job! 👏";
+    if (score >= 70) return "Good effort! 💪";
+    if (score >= 60) return "Getting there! 📈";
+    return "Keep practicing! 💡";
+  };
+
+  const getFlowIcon = (flow?: string) => {
     switch (flow) {
       case 'Smooth':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
+        return <CheckCircle className="w-4 h-4 text-success" />;
       case 'Some hesitations':
-        return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+        return <AlertTriangle className="w-4 h-4 text-warning" />;
       default:
-        return <AlertTriangle className="w-4 h-4 text-red-400" />;
+        return <AlertTriangle className="w-4 h-4 text-destructive" />;
     }
   };
 
+  // Calculate circumference for circular progress
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (metrics.overallScore / 100) * circumference;
+
   return (
     <div className="space-y-6">
-      {/* Overall Score */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 dark:bg-white/10 dark:border-white/20 bg-white border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-foreground">Interview Performance</h3>
-          <div className="text-right">
-            <div className={`text-3xl font-bold ${getScoreColor(metrics.overallScore)}`}>
-              {metrics.overallScore}%
-            </div>
-            <div className="text-muted-foreground text-sm">Overall Score</div>
-          </div>
-        </div>
-        <Progress value={metrics.overallScore} className="h-3" />
-      </Card>
-
-      {/* Content Analysis */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 dark:bg-white/10 dark:border-white/20 bg-white border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <Brain className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-foreground font-semibold">Content Quality Analysis</h4>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(metrics.specificity)}`}>
-              {metrics.specificity}%
-            </div>
-            <div className="text-muted-foreground text-sm">Specificity</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">Concrete examples</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(metrics.relevance)}`}>
-              {metrics.relevance}%
-            </div>
-            <div className="text-muted-foreground text-sm">Relevance</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">On-topic response</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(metrics.impact)}`}>
-              {metrics.impact}%
-            </div>
-            <div className="text-muted-foreground text-sm">Impact</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">Quantified results</div>
-          </div>
-          <div className="text-center">
-            <div className={`text-2xl font-bold ${getScoreColor(metrics.structure)}`}>
-              {metrics.structure}%
-            </div>
-            <div className="text-muted-foreground text-sm">Structure</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">Clear organization</div>
-          </div>
-        </div>
-
-        {questionType === 'behavioral' && (
-          <div className="border-t border-border pt-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Star className="w-4 h-4 text-yellow-400" />
-              <h5 className="text-foreground font-medium">STAR Method Analysis</h5>
-              <Badge className={`ml-auto ${getScoreColor(metrics.starMethod.score)}`}>
-                {metrics.starMethod.score}%
-              </Badge>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {Object.entries(metrics.starMethod).slice(0, 4).map(([component, present]) => (
-                <div key={component} className="text-center">
-                  <div className={`w-8 h-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
-                    present ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {present ? '✓' : '×'}
-                  </div>
-                  <div className="text-xs text-muted-foreground capitalize">{component}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Fluency Analysis */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 dark:bg-white/10 dark:border-white/20 bg-white border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <MessageSquare className="w-5 h-5 text-green-400" />
-          <h4 className="text-foreground font-semibold">Fluency & Delivery</h4>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-400">{duration}s</div>
-            <div className="text-muted-foreground text-sm">Duration</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-400">{metrics.fluency.pauseCount}</div>
-            <div className="text-muted-foreground text-sm">Long Pauses</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">&gt;2 seconds</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-400">{metrics.fluency.hesitations}</div>
-            <div className="text-muted-foreground text-sm">Hesitations</div>
-            <div className="text-xs text-muted-foreground/70 mt-1">Stutters/repeats</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-          <div className="flex items-center space-x-2">
-            {getFlowIcon(metrics.fluency.overallFlow)}
-            <span className="text-foreground">Overall Flow</span>
-          </div>
-          <Badge variant="outline" className="border-border text-muted-foreground">
-            {metrics.fluency.overallFlow}
-          </Badge>
-        </div>
-      </Card>
-
-      {/* Specific Suggestions */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 dark:bg-white/10 dark:border-white/20 bg-white border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-yellow-400" />
-          <h4 className="text-foreground font-semibold">Improvement Suggestions</h4>
-        </div>
-        
-        <div className="space-y-3 max-h-64 overflow-y-auto">
-          {suggestions.map((suggestion, index) => (
-            <div key={index} className="flex items-start space-x-3 p-3 bg-muted/30 rounded-lg">
-              <div className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-sm font-semibold mt-0.5">
-                {index + 1}
+      {/* Overall Score Card - Full Width */}
+      <Card className={`bg-card border ${getScoreBgColor(metrics.overallScore)} p-8`}>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+          {/* Circular Score Display */}
+          <div className="flex items-center gap-8">
+            <div className="relative w-36 h-36">
+              <svg className="w-full h-full -rotate-90">
+                <circle
+                  cx="72"
+                  cy="72"
+                  r={radius}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  className="text-muted/30"
+                />
+                <circle
+                  cx="72"
+                  cy="72"
+                  r={radius}
+                  fill="none"
+                  strokeWidth="8"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={offset}
+                  strokeLinecap="round"
+                  className={`${getScoreRingColor(metrics.overallScore)} transition-all duration-1000`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className={`text-4xl font-bold ${getScoreColor(metrics.overallScore)}`}>
+                  {Math.round(metrics.overallScore)}
+                </span>
+                <span className="text-sm text-muted-foreground">/100</span>
               </div>
-              <p className="text-foreground/90 text-sm leading-relaxed">{suggestion}</p>
+            </div>
+            
+            <div>
+              <p className="text-2xl font-semibold text-foreground mb-2">
+                {getMessage(metrics.overallScore)}
+              </p>
+              <p className="text-muted-foreground">
+                You scored higher than 65% of users on this question type
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="flex gap-6 text-center">
+            <div>
+              <p className="text-2xl font-bold text-foreground">{duration}s</p>
+              <p className="text-sm text-muted-foreground">Duration</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">{transcription.split(' ').length}</p>
+              <p className="text-sm text-muted-foreground">Words</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Detailed Metrics Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Clarity', value: metrics.specificity, icon: Target, description: 'Concrete examples' },
+          { label: 'Structure', value: metrics.structure, icon: BarChart3, description: 'Clear organization' },
+          { label: 'Content', value: metrics.relevance, icon: Brain, description: 'On-topic response' },
+          { label: 'Impact', value: metrics.impact, icon: TrendingUp, description: 'Quantified results' },
+        ].map((metric, index) => (
+          <Card key={index} className="bg-card border-border p-5 hover-lift">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-lg ${getScoreBgColor(metric.value)} flex items-center justify-center`}>
+                <metric.icon className={`w-5 h-5 ${getScoreColor(metric.value)}`} />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{metric.label}</p>
+                <p className={`text-xl font-bold ${getScoreColor(metric.value)}`}>{metric.value}%</p>
+              </div>
+            </div>
+            <Progress value={metric.value} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">{metric.description}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Strengths and Improvements */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Strengths Card */}
+        <Card className="bg-success/5 border-success/20 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5 text-success" />
+            <h4 className="font-semibold text-foreground">What You Did Well</h4>
+          </div>
+          <ul className="space-y-3">
+            {(metrics.strengths || [
+              'Clear communication style',
+              'Good use of specific examples',
+              'Professional tone maintained'
+            ]).map((strength, index) => (
+              <li key={index} className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-success/20 text-success flex items-center justify-center text-xs mt-0.5">✓</span>
+                <span className="text-foreground/90">{strength}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        {/* Improvements Card */}
+        <Card className="bg-warning/5 border-warning/20 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-5 h-5 text-warning" />
+            <h4 className="font-semibold text-foreground">How to Improve</h4>
+          </div>
+          <ul className="space-y-3">
+            {(metrics.improvements || suggestions.slice(0, 3)).map((improvement, index) => (
+              <li key={index} className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-warning/20 text-warning flex items-center justify-center text-xs mt-0.5">!</span>
+                <span className="text-foreground/90">{improvement}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+
+      {/* STAR Method Analysis (for behavioral questions) */}
+      {(questionType === 'behavioral' || questionType === 'situational') && metrics.starMethod && (
+        <Card className="bg-card border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-warning" />
+              <h4 className="font-semibold text-foreground">STAR Method Analysis</h4>
+            </div>
+            <Badge className={getScoreBgColor(metrics.starMethod.score)}>
+              <span className={getScoreColor(metrics.starMethod.score)}>{metrics.starMethod.score}%</span>
+            </Badge>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { key: 'situation', label: 'Situation', desc: 'Context provided' },
+              { key: 'task', label: 'Task', desc: 'Role defined' },
+              { key: 'action', label: 'Action', desc: 'Steps taken' },
+              { key: 'result', label: 'Result', desc: 'Outcome shown' }
+            ].map((item) => {
+              const present = metrics.starMethod?.[item.key as keyof typeof metrics.starMethod];
+              return (
+                <div key={item.key} className="text-center">
+                  <div className={`w-14 h-14 rounded-full mx-auto mb-2 flex items-center justify-center ${
+                    present ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {present ? <CheckCircle className="w-6 h-6" /> : <span className="text-xl">—</span>}
+                  </div>
+                  <p className="font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Pro Tips */}
+      <Card className="bg-primary/5 border-primary/20 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Lightbulb className="w-5 h-5 text-primary" />
+          <h4 className="font-semibold text-foreground">Pro Interviewer Tips</h4>
+        </div>
+        <div className="space-y-3">
+          {suggestions.map((tip, index) => (
+            <div key={index} className="flex items-start gap-3 p-3 bg-card rounded-lg border border-border">
+              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                {index + 1}
+              </span>
+              <p className="text-foreground/90 text-sm leading-relaxed">{tip}</p>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Response Transcript */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20 dark:bg-white/10 dark:border-white/20 bg-white border-gray-200 p-6">
-        <div className="flex items-center space-x-2 mb-4">
-          <BarChart3 className="w-5 h-5 text-cyan-400" />
-          <h4 className="text-foreground font-semibold">Your Response</h4>
-        </div>
-        
-        <div className="bg-muted/30 rounded-lg p-4 max-h-64 overflow-y-auto">
-          <div className="text-sm text-muted-foreground mb-2">Question:</div>
-          <p className="text-foreground mb-4 font-medium">{questionText}</p>
+      {/* Response Transcript (Collapsible) */}
+      <Card className="bg-card border-border p-6">
+        <details className="group">
+          <summary className="flex items-center justify-between cursor-pointer list-none">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-muted-foreground" />
+              <h4 className="font-semibold text-foreground">Your Response</h4>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-90" />
+          </summary>
           
-          <div className="text-sm text-muted-foreground mb-2">Your Answer:</div>
-          <p className="text-foreground/90 leading-relaxed">{transcription}</p>
-        </div>
+          <div className="mt-4 space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">Question:</p>
+              <p className="text-foreground font-medium">{questionText}</p>
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">Your Answer:</p>
+              <p className="text-foreground/90 leading-relaxed">{transcription || 'No transcription available'}</p>
+            </div>
+          </div>
+        </details>
       </Card>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3 justify-center pt-4">
+        <Button variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Practice Similar Question
+        </Button>
+        <Button variant="outline" className="gap-2">
+          <Bookmark className="w-4 h-4" />
+          Save Feedback
+        </Button>
+        <Button variant="ghost" className="gap-2 text-muted-foreground">
+          <Share2 className="w-4 h-4" />
+          Share Results
+        </Button>
+      </div>
     </div>
   );
 };
